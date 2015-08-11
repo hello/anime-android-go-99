@@ -2,7 +2,6 @@ package is.hello.go99.animators;
 
 import android.animation.Animator;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
