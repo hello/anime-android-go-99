@@ -17,7 +17,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class AnimatorContext implements Animator.AnimatorListener {
+public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Whether or not stack-traces should be printed when {@link #beginAnimation()}
      * and {@link #endAnimation()} are called. Provided for debugging dangling animations.

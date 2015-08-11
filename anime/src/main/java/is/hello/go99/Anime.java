@@ -8,7 +8,7 @@ import android.view.animation.Interpolator;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class Anime {
+public class Anime {
     /**
      * For animations that will be run in the middle of a user interaction
      * where just snapping an element off the screen would look bad.
