@@ -163,7 +163,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param consumer    A callback that describes the animations to run against a given facade.
      * @param onCompleted   An optional listener to invoke when the longest animation completes.
      */
-    public void transaction(final @Nullable AnimatorConfig config,
+    public void transaction(final @Nullable AnimatorTemplate config,
                             final @TransactionOptions int options,
                             final @NonNull TransactionConsumer consumer,
                             final @Nullable OnAnimationCompleted onCompleted) {
@@ -204,7 +204,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     }
 
     /**
-     * Internal. Second half of {@link #transaction(AnimatorConfig, int, TransactionConsumer, OnAnimationCompleted)}.
+     * Internal. Second half of {@link #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)}.
      */
     private void startTransaction(@NonNull List<Animator> animators,
                                   @Nullable OnAnimationCompleted onCompleted) {
@@ -228,7 +228,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Short-hand provided for common use-case.
      *
-     * @see #transaction(AnimatorConfig, int, TransactionConsumer, OnAnimationCompleted)
+     * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
     public void transaction(@NonNull TransactionConsumer consumer,
                             @Nullable OnAnimationCompleted onCompleted) {
@@ -249,7 +249,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Used for transaction callbacks to specify animations against views.
      *
-     * @see #transaction(AnimatorConfig, int, TransactionConsumer, OnAnimationCompleted)
+     * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
     public interface Transaction {
         /**
