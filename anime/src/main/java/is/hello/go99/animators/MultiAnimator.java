@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import is.hello.go99.Anime;
+import is.hello.go99.ViewVisibility;
 
 /**
  * A wrapper around {@link ViewPropertyAnimator} that descends from {@link Animator}
@@ -335,7 +336,7 @@ public final class MultiAnimator extends Animator implements Animator.AnimatorLi
         }).alpha(1f);
     }
 
-    public MultiAnimator fadeOut(final @Anime.ViewVisibility int targetVisibility) {
+    public MultiAnimator fadeOut(final @ViewVisibility int targetVisibility) {
         return alpha(0f)
                 .addOnAnimationCompleted(new OnAnimationCompleted() {
                     @Override

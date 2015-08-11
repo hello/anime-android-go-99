@@ -1,20 +1,12 @@
 package is.hello.go99;
 
-import android.animation.ArgbEvaluator;
-import android.animation.ValueAnimator;
-import android.graphics.Rect;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.HashSet;
 import java.util.Set;
-
-import is.hello.go99.evaluators.RectEvaluatorCompat;
 
 public final class Anime {
     /**
@@ -109,60 +101,14 @@ public final class Anime {
     //endregion
 
 
-    //region Vending Common Value Animators
-
-    /**
-     * Creates and returns a ValueAnimator that will
-     * transition between the specified array of colors.
-     * <p/>
-     * Returned animator is configured to use the standard defaults.
-     */
-    public static ValueAnimator createColorAnimator(@NonNull int... colors) {
-        ValueAnimator colorAnimator = ValueAnimator.ofInt((int[]) colors);
-        colorAnimator.setEvaluator(new ArgbEvaluator());
-        colorAnimator.setInterpolator(INTERPOLATOR_DEFAULT);
-        colorAnimator.setDuration(DURATION_NORMAL);
-        return colorAnimator;
-    }
-
-    /**
-     * Creates and returns a ValueAnimator that will
-     * transition between the specified array of rectangles.
-     * <p/>
-     * The same Rect instance will be used in each call.
-     */
-    public static ValueAnimator createRectAnimator(@NonNull Rect... rectangles) {
-        ValueAnimator rectAnimator = ValueAnimator.ofObject(new RectEvaluatorCompat(), (Object[]) rectangles);
-        rectAnimator.setInterpolator(INTERPOLATOR_DEFAULT);
-        rectAnimator.setDuration(DURATION_NORMAL);
-        return rectAnimator;
-    }
-
-    /**
-     * Creates and returns a ValueAnimator that will
-     * transition between the specified array of rectangles
-     * on a given view.
-     */
-    public static ValueAnimator createViewFrameAnimator(final @NonNull View view,
-                                                        final @NonNull Rect... rectangles) {
-        ValueAnimator frameAnimator = createRectAnimator((Rect[]) rectangles);
-        frameAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator a) {
-                Rect frame = (Rect) a.getAnimatedValue();
-                view.layout(frame.left, frame.top, frame.right, frame.bottom);
-            }
-        });
-        return frameAnimator;
-    }
-
-    //endregion
-
-
     //region Animating Views
 
     /**
      * Stops any running animation on a given array of views.
+     * <p />
+     * If your view implements custom animations outside of {@link View#animate()},
+     * and {@link is.hello.go99.animators.MultiAnimator}, and you want to support
+     * this method, you should override {@link View#clearAnimation()}.
      */
     public static void cancelAll(@NonNull View... forViews) {
         for (View forView : forViews) {
@@ -195,7 +141,9 @@ public final class Anime {
     //endregion
 
 
-    @IntDef({View.VISIBLE, View.INVISIBLE, View.GONE})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface ViewVisibility {}
+    /**
+     * Not meant to be instantiated.
+     */
+    private Anime() {
+    }
 }

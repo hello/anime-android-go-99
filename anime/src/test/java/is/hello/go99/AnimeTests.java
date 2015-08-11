@@ -2,11 +2,15 @@ package is.hello.go99;
 
 import android.content.res.Resources;
 import android.view.View;
+import android.view.ViewPropertyAnimator;
 
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class AnimeTests extends Go99TestCase {
     @Test
@@ -46,6 +50,18 @@ public class AnimeTests extends Go99TestCase {
         assertThat(Anime.interpolateColors(0.50f, MIN, MAX), is(0xff7F7F7F));
         assertThat(Anime.interpolateColors(0.75f, MIN, MAX), is(0xffBFBFBF));
         assertThat(Anime.interpolateColors(1.00f, MIN, MAX), is(0xffFFFFFF));
+    }
+
+    @Test
+    public void cancelAll() throws Exception {
+        View view = spy(new View(getContext()));
+        ViewPropertyAnimator animator = spy(view.animate());
+        doReturn(animator).when(view).animate();
+
+        Anime.cancelAll(view);
+
+        verify(view).clearAnimation();
+        verify(animator).cancel();
     }
 
     @Test
