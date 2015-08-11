@@ -15,7 +15,12 @@
 */
 package is.hello.go99.animators;
 
+import android.animation.Animator;
 import android.animation.AnimatorSet;
+import android.animation.TimeInterpolator;
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.view.animation.AccelerateDecelerateInterpolator;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,9 +29,13 @@ import org.robolectric.util.Scheduler;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import is.hello.go99.Anime;
 import is.hello.go99.Go99TestCase;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
@@ -97,5 +106,50 @@ public class AnimatorContextTests extends Go99TestCase {
         animatorContext.onAnimationEnd(fake);
         verify(animatorContext).endAnimation();
         verify(fake).removeListener(animatorContext);
+    }
+
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public static class TransactionTests extends Go99TestCase {
+        private final AnimatorContext animatorContext = new AnimatorContext(getClass().getSimpleName());
+
+        @Test
+        public void toAnimatorSingle() throws Exception {
+            AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                             new AccelerateDecelerateInterpolator());
+
+            AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
+                                                                                 template);
+            AnimatorSet testAnimator = new AnimatorSet();
+            single.takeOwnership(testAnimator);
+
+            Animator animator1 = single.toAnimator();
+            assertThat(animator1, is(sameInstance((Animator) testAnimator)));
+            assertThat(animator1.getDuration(),
+                       is(equalTo(template.duration)));
+            assertThat(animator1.getInterpolator(),
+                       is(equalTo((TimeInterpolator) template.interpolator)));
+        }
+
+        @Test
+        public void toAnimatorMultiple() throws Exception {
+            AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                             new AccelerateDecelerateInterpolator());
+
+            AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
+                                                                                   template);
+
+            AnimatorSet testAnimator1 = new AnimatorSet();
+            AnimatorSet testAnimator2 = new AnimatorSet();
+            multiple.takeOwnership(testAnimator1);
+            multiple.takeOwnership(testAnimator2);
+
+            Animator animator2 = multiple.toAnimator();
+            assertThat(animator2, is(not(sameInstance((Animator) testAnimator1))));
+            assertThat(animator2.getDuration(),
+                       is(equalTo(template.duration)));
+            assertThat(animator2.getInterpolator(),
+                       is(equalTo((TimeInterpolator) template.interpolator)));
+        }
     }
 }

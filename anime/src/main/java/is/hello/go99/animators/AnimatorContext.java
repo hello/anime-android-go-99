@@ -214,42 +214,23 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
      * @see TransactionOptions  For possible options.
-     * @see TransactionConsumer For more information on working with a transaction.
+     * @see Transaction         For more information on working with a transaction.
      */
     public void transaction(final @Nullable AnimatorTemplate template,
                             final @TransactionOptions int options,
                             final @NonNull TransactionConsumer consumer,
                             final @Nullable OnAnimationCompleted onCompleted) {
-        final List<Animator> animators = new ArrayList<>(2);
-
-        Transaction transaction = new Transaction() {
-            @Override
-            public MultiAnimator animatorFor(@NonNull View view) {
-                MultiAnimator animator = MultiAnimator.animatorFor(view, AnimatorContext.this);
-                animators.add(animator);
-                return animator;
-            }
-
-            @Override
-            public <T extends Animator> T take(@NonNull T animator) {
-                animators.add(animator);
-                return animator;
-            }
-        };
+        Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
 
-        AnimatorSet animatorSet = new AnimatorSet();
-        if (template != null) {
-            template.apply(animatorSet);
-        }
+        Animator animator = transaction.toAnimator();
         if (onCompleted != null) {
-            animatorSet.addListener(new OnAnimationCompleted.Adapter(onCompleted));
+            animator.addListener(new OnAnimationCompleted.Adapter(onCompleted));
         }
-        animatorSet.playTogether(animators);
         if ((options & OPTION_START_ON_IDLE) == OPTION_START_ON_IDLE) {
-            startWhenIdle(animatorSet);
+            startWhenIdle(animator);
         } else {
-            animatorSet.start();
+            animator.start();
         }
     }
 
@@ -275,28 +256,95 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
 
     /**
-     * Used for transaction callbacks to specify animations against views.
+     * A pending collection of animators that will be run
+     * together within a containing animator context.
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
-    public interface Transaction {
+    public static class Transaction {
         /**
-         * Creates a {@link MultiAnimator} instance for a given view,
-         * applies the transaction's template if applicable, and returns
-         * the value. The animator will then be started with the rest of
-         * the transaction.
-         * <p/>
-         * No external references to the returned multi animator should be made.
+         * The animator context the transaction belongs to.
          */
-        MultiAnimator animatorFor(@NonNull View view);
+        public final AnimatorContext animatorContext;
 
         /**
-         * Takes ownership of a given animator, applying
-         * the transaction's template to it if applicable.
-         * <p />
-         * Use {@link #animatorFor(View)} if you need a {@link MultiAnimator}.
+         * The template to apply to transaction animators, if non-null.
          */
-        <T extends Animator> T take(@NonNull T animator);
+        public final @Nullable AnimatorTemplate template;
+
+        private final List<Animator> pending = new ArrayList<>(2);
+
+        /**
+         * Construct a transaction with an animator context and template.
+         * <p />
+         * Should not be called directly unless creating a new subclass.
+         *
+         * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
+         */
+        public Transaction(@NonNull AnimatorContext animatorContext,
+                           @Nullable AnimatorTemplate template) {
+            this.animatorContext = animatorContext;
+            this.template = template;
+        }
+
+        /**
+         * Creates a {@link MultiAnimator} for a given view, configuring it
+         * according to the transaction's template (if applicable), and
+         * starting it together with all other animations contained in
+         * the transaction.
+         * <p/>
+         * The returned animator belongs to the transaction,
+         * making modifications to it after the transaction
+         * consumer returns is undefined.
+         */
+        public MultiAnimator animatorFor(@NonNull View view) {
+            MultiAnimator multiAnimator = MultiAnimator.animatorFor(view, animatorContext);
+            pending.add(multiAnimator);
+            return multiAnimator;
+        }
+
+        /**
+         * Takes ownership of a given animator, configuring it
+         * according to the transaction's template (if applicable)
+         * and starting it together with all other animations
+         * contained in the transaction.
+         * <p />
+         * The passed in animator belongs to the transaction,
+         * making modifications to it after the transaction
+         * consumer returns is undefined.
+         *
+         * @see #animatorFor(View) if you need a {@link MultiAnimator}.
+         */
+        public <T extends Animator> T takeOwnership(@NonNull T animator) {
+            pending.add(animator);
+            animator.addListener(animatorContext);
+            return animator;
+        }
+
+        /**
+         * Converts the transaction into a compound animator
+         * that will play all transaction animations together.
+         * <p />
+         * If the transaction contains only one animation, that
+         * animation will be configured against the template (if
+         * specified) and returned by this method.
+         */
+        public Animator toAnimator() {
+            if (pending.size() == 1) {
+                Animator single = pending.get(0);
+                if (template != null) {
+                    template.apply(single);
+                }
+                return single;
+            } else {
+                AnimatorSet set = new AnimatorSet();
+                set.playTogether(pending);
+                if (template != null) {
+                    template.apply(set);
+                }
+                return set;
+            }
+        }
     }
 
 
@@ -308,7 +356,18 @@ public class AnimatorContext implements Animator.AnimatorListener {
         void consume(@NonNull Transaction transaction);
     }
 
+    /**
+     * A scene owns an animator context and should contain a collection
+     * of related views where tracking and coordinating animation life-cycles
+     * is useful. A typical implementor of this method would be a Fragment,
+     * an Activity, or a View depending on the structure of your application.
+     */
     public interface Scene {
+        /**
+         * Returns the animator context associated with the scene.
+         * <p />
+         * Implementors must always return the same instance.
+         */
         @NonNull AnimatorContext getAnimatorContext();
     }
 
