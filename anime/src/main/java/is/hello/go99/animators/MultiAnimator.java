@@ -24,7 +24,7 @@ import is.hello.go99.ViewVisibility;
  * A wrapper around {@link ViewPropertyAnimator} that descends from {@link Animator}
  * to allow for generic treatment of all animations within an {@link AnimatorContext}.
  */
-public final class MultiAnimator extends Animator implements Animator.AnimatorListener {
+public class MultiAnimator extends Animator implements Animator.AnimatorListener {
     private final View target;
     private final @Nullable AnimatorContext animatorContext;
     private final Map<Property, Float> properties = new HashMap<>();

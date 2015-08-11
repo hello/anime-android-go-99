@@ -16,7 +16,7 @@ import is.hello.go99.evaluators.RectEvaluatorCompat;
  * Read-only class that encapsulates the attributes common to different animation classes
  * in the Android SDK.
  */
-public final class AnimatorTemplate {
+public class AnimatorTemplate {
     //region Attributes
 
     /**
