@@ -1,0 +1,15 @@
+machine:
+  java:
+    version: oraclejdk8
+general:
+  branches:
+    ignore:
+      - /no\-test\-.*/
+dependencies:
+  override:
+    - echo y | android update sdk --no-ui --all --filter "extra-android-support"
+    - ./gradlew dependencies -PhelloAwsAccessKeyID="$AWS_ACCESS_KEY_ID" -PhelloAwsSecretKey="$AWS_SECRET_KEY"
+test:
+  override:
+    - ./gradlew clean testDebug -PdisablePreDex -PhelloAwsAccessKeyID="$AWS_ACCESS_KEY_ID" -PhelloAwsSecretKey="$AWS_SECRET_KEY"
+    - cp -r anime/build/reports/tests/* $CIRCLE_TEST_REPORTS

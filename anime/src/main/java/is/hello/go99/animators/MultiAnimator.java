@@ -3,6 +3,8 @@ package is.hello.go99.animators;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.SimpleArrayMap;
@@ -86,6 +88,7 @@ public final class MultiAnimator extends Animator implements Animator.AnimatorLi
     }
 
     @Override
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public TimeInterpolator getInterpolator() {
         return interpolator;
     }
