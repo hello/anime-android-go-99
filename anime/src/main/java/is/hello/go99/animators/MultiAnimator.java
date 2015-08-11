@@ -7,14 +7,15 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.util.SimpleArrayMap;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import is.hello.go99.Anime;
 
@@ -25,7 +26,7 @@ import is.hello.go99.Anime;
 public final class MultiAnimator extends Animator implements Animator.AnimatorListener {
     private final View target;
     private final @Nullable AnimatorContext animatorContext;
-    private final SimpleArrayMap<Property, Float> properties = new SimpleArrayMap<>();
+    private final Map<Property, Float> properties = new HashMap<>();
 
     private long duration = Anime.DURATION_NORMAL;
     private long startDelay = 0;
@@ -214,9 +215,9 @@ public final class MultiAnimator extends Animator implements Animator.AnimatorLi
         propertyAnimator.setInterpolator(interpolator);
         propertyAnimator.setListener(this);
 
-        for (int i = 0, size = properties.size(); i < size; i++) {
-            Property property = properties.keyAt(i);
-            float value = properties.valueAt(i);
+        for (Map.Entry<Property, Float> entry : properties.entrySet()) {
+            Property property = entry.getKey();
+            float value = entry.getValue();
             switch (property) {
                 case X:
                     propertyAnimator.x(value);
