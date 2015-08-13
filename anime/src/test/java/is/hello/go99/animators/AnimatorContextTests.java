@@ -20,6 +20,8 @@ import android.animation.AnimatorSet;
 import android.animation.TimeInterpolator;
 import android.annotation.TargetApi;
 import android.os.Build;
+import android.support.annotation.NonNull;
+import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
 import org.junit.Before;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import is.hello.go99.Anime;
 import is.hello.go99.Go99TestCase;
+import is.hello.go99.animators.AnimatorContext.Transaction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -108,18 +111,55 @@ public class AnimatorContextTests extends Go99TestCase {
         verify(fake).removeListener(animatorContext);
     }
 
+    @Test
+    public void transactionCancelingConsistency() throws Exception {
+        final AtomicBoolean completedCalled = new AtomicBoolean(false);
+        animatorContext.transaction(new AnimatorContext.TransactionConsumer() {
+            @Override
+            public void consume(@NonNull Transaction transaction) {
+                transaction.cancel();
+            }
+        }, new OnAnimationCompleted() {
+            @Override
+            public void onAnimationCompleted(boolean finished) {
+                completedCalled.set(true);
+            }
+        });
+        assertThat(completedCalled.get(), is(false));
+    }
+
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static class TransactionTests extends Go99TestCase {
         private final AnimatorContext animatorContext = new AnimatorContext(getClass().getSimpleName());
 
         @Test
+        public void toAnimatorConsistency() throws Exception {
+            AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                             new AccelerateDecelerateInterpolator());
+
+            Transaction transaction = new Transaction(animatorContext, template);
+            AnimatorSet testAnimator = new AnimatorSet();
+            transaction.takeOwnership(testAnimator);
+
+            assertThat(transaction.toAnimator(), is(sameInstance(transaction.toAnimator())));
+
+            try {
+                transaction.takeOwnership(new AnimatorSet());
+                transaction.animatorFor(new View(getContext()));
+            } catch (Exception e) {
+                return;
+            }
+
+            fail("Consistency not enforced");
+        }
+
+        @Test
         public void toAnimatorSingle() throws Exception {
             AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
                                                              new AccelerateDecelerateInterpolator());
 
-            AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
-                                                                                 template);
+            Transaction single = new Transaction(animatorContext, template);
             AnimatorSet testAnimator = new AnimatorSet();
             single.takeOwnership(testAnimator);
 
@@ -136,8 +176,7 @@ public class AnimatorContextTests extends Go99TestCase {
             AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
                                                              new AccelerateDecelerateInterpolator());
 
-            AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
-                                                                                   template);
+            Transaction multiple = new Transaction(animatorContext, template);
 
             AnimatorSet testAnimator1 = new AnimatorSet();
             AnimatorSet testAnimator2 = new AnimatorSet();

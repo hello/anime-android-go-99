@@ -222,6 +222,9 @@ public class AnimatorContext implements Animator.AnimatorListener {
                             final @Nullable OnAnimationCompleted onCompleted) {
         Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
+        if (transaction.isCanceled()) {
+            return;
+        }
 
         Animator animator = transaction.toAnimator();
         if (onCompleted != null) {
@@ -273,6 +276,8 @@ public class AnimatorContext implements Animator.AnimatorListener {
         public final @Nullable AnimatorTemplate template;
 
         private final List<Animator> pending = new ArrayList<>(2);
+        private @Nullable Animator animator;
+        private boolean canceled = false;
 
         /**
          * Construct a transaction with an animator context and template.
@@ -298,6 +303,10 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * consumer returns is undefined.
          */
         public MultiAnimator animatorFor(@NonNull View view) {
+            if (this.animator != null) {
+                throw new IllegalStateException("Cannot modify a transaction after it has been committed");
+            }
+
             MultiAnimator multiAnimator = MultiAnimator.animatorFor(view, animatorContext);
             pending.add(multiAnimator);
             return multiAnimator;
@@ -316,6 +325,10 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * @see #animatorFor(View) if you need a {@link MultiAnimator}.
          */
         public <T extends Animator> T takeOwnership(@NonNull T animator) {
+            if (this.animator != null) {
+                throw new IllegalStateException("Cannot modify a transaction after it has been committed");
+            }
+
             pending.add(animator);
             animator.addListener(animatorContext);
             return animator;
@@ -330,20 +343,41 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * specified) and returned by this method.
          */
         public Animator toAnimator() {
-            if (pending.size() == 1) {
-                Animator single = pending.get(0);
-                if (template != null) {
-                    template.apply(single);
+            if (animator == null) {
+                if (pending.size() == 1) {
+                    Animator single = pending.get(0);
+                    if (template != null) {
+                        template.apply(single);
+                    }
+                    this.animator = single;
+                } else {
+                    AnimatorSet set = new AnimatorSet();
+                    set.playTogether(pending);
+                    if (template != null) {
+                        template.apply(set);
+                    }
+                    this.animator = set;
                 }
-                return single;
-            } else {
-                AnimatorSet set = new AnimatorSet();
-                set.playTogether(pending);
-                if (template != null) {
-                    template.apply(set);
-                }
-                return set;
+                pending.clear();
             }
+            return animator;
+        }
+
+        /**
+         * Cancels the transaction.
+         */
+        public void cancel() {
+            if (this.animator != null) {
+                this.animator.cancel();
+            }
+            this.canceled = true;
+        }
+
+        /**
+         * Returns whether or not the transaction has been canceled.
+         */
+        public boolean isCanceled() {
+            return canceled;
         }
     }
 
