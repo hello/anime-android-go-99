@@ -16,6 +16,7 @@
 package is.hello.go99.animators;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.os.Handler;
 import android.os.Looper;
@@ -43,6 +44,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
     private final String name;
     private final List<Runnable> runOnIdle = new ArrayList<>();
+    private final List<Transaction> runningTransactions = new ArrayList<>();
 
     private int activeAnimationCount = 0;
 
@@ -212,21 +214,33 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param options       The options to apply to the transaction.
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
+     * @return The transaction.
      *
      * @see TransactionOptions  For possible options.
      * @see Transaction         For more information on working with a transaction.
      */
-    public void transaction(final @Nullable AnimatorTemplate template,
-                            final @TransactionOptions int options,
-                            final @NonNull TransactionConsumer consumer,
-                            final @Nullable OnAnimationCompleted onCompleted) {
-        Transaction transaction = new Transaction(this, template);
+    public Transaction transaction(final @Nullable AnimatorTemplate template,
+                                   final @TransactionOptions int options,
+                                   final @NonNull TransactionConsumer consumer,
+                                   final @Nullable OnAnimationCompleted onCompleted) {
+        final Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
         if (transaction.isCanceled()) {
-            return;
+            return transaction;
         }
 
         Animator animator = transaction.toAnimator();
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                runningTransactions.add(transaction);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                runningTransactions.remove(transaction);
+            }
+        });
         if (onCompleted != null) {
             animator.addListener(new OnAnimationCompleted.Adapter(onCompleted));
         }
@@ -235,6 +249,8 @@ public class AnimatorContext implements Animator.AnimatorListener {
         } else {
             animator.start();
         }
+
+        return transaction;
     }
 
     /**
@@ -242,9 +258,19 @@ public class AnimatorContext implements Animator.AnimatorListener {
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
-    public void transaction(@NonNull TransactionConsumer consumer,
-                            @Nullable OnAnimationCompleted onCompleted) {
-        transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+    public Transaction transaction(@NonNull TransactionConsumer consumer,
+                                   @Nullable OnAnimationCompleted onCompleted) {
+        return transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+    }
+
+    /**
+     * Stops any transactions that are currently running in the animator context.
+     */
+    public void cancelTransactions() {
+        for (int i = runningTransactions.size() - 1; i >= 0; i--) {
+            runningTransactions.get(i).cancel();
+        }
+        runningTransactions.clear();
     }
 
     //endregion
@@ -261,6 +287,11 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * A pending collection of animators that will be run
      * together within a containing animator context.
+     * <p />
+     * Transactions cannot be added to once they are committed,
+     * which happens implicitly when your {@link TransactionConsumer}
+     * returns. After a transaction has been committed, you may safely
+     * retain a reference to it for as long as your circumstances require.
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
@@ -341,6 +372,11 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * If the transaction contains only one animation, that
          * animation will be configured against the template (if
          * specified) and returned by this method.
+         * <p />
+         * This method has the side-effect of placing the transaction
+         * into the committed state where no new animators may be added.
+         * <p />
+         * Guaranteed to return the same instance for multiple calls.
          */
         public Animator toAnimator() {
             if (animator == null) {
