@@ -75,9 +75,11 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
     /**
      * Posts a unit of work to run when the context is idle.
-     * <p/>
+     * <p>
      * The task will be immediately executed if
      * the animation context is currently idle.
+     *
+     * @param task The task.
      */
     public void runWhenIdle(@NonNull Runnable task) {
         if (DEBUG) {
@@ -91,6 +93,10 @@ public class AnimatorContext implements Animator.AnimatorListener {
         }
     }
 
+    /**
+     * Schedules an animator to start when the animator context is idle next.
+     * @param animator  The animator to start.
+     */
     public void startWhenIdle(final @NonNull Animator animator) {
         runWhenIdle(new Runnable() {
             @Override
@@ -120,7 +126,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Increment the active animation counter, potentially
      * bringing the animator context into the active state.
-     * <p />
+     * <p>
      * Animation tracking is implemented as a counter instead
      * of tracking animator instances to allow interactive
      * transitions to be treated as active animations within
@@ -143,7 +149,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * bringing the animator context out of the active state.
      * If the counter reaches zero with this call, on the next
      * looper cycle any queued idle tasks will be executed.
-     * <p />
+     * <p>
      * Calling {@link #beginAnimation()} before the next looper
      * cycle will cause those tasks to remain queued.
      *
@@ -200,13 +206,13 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
     /**
      * Executes a series of animations within the animation context.
-     * <code><pre>
+     * <pre>
      *     AnimatorContext context = ...;
-     *     context.transaction(t -> {
+     *     context.transaction(t -&gt; {
      *         t.animatorFor(oldView).fadeOut(View.GONE);
      *         t.animatorFor(newView).fadeIn();
      *     });
-     * </pre></code>
+     * </pre>
      *
      * @param template      An optional template to apply to animators involved in the transaction.
      * @param options       The options to apply to the transaction.
@@ -236,6 +242,9 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
     /**
      * Short-hand provided for common use-case.
+     *
+     * @param consumer      A consumer that will add animators to the transaction.
+     * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
@@ -276,8 +285,11 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
         /**
          * Construct a transaction with an animator context and template.
-         * <p />
+         * <p>
          * Should not be called directly unless creating a new subclass.
+         *
+         * @param animatorContext The context the transaction belongs to.
+         * @param template The template to apply to animators added to the transaction.
          *
          * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
          */
@@ -292,10 +304,13 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * according to the transaction's template (if applicable), and
          * starting it together with all other animations contained in
          * the transaction.
-         * <p/>
+         * <p>
          * The returned animator belongs to the transaction,
          * making modifications to it after the transaction
          * consumer returns is undefined.
+         *
+         * @param view The view to create an animator for.
+         * @return An animator for view.
          */
         public MultiAnimator animatorFor(@NonNull View view) {
             MultiAnimator multiAnimator = MultiAnimator.animatorFor(view, animatorContext);
@@ -308,10 +323,14 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * according to the transaction's template (if applicable)
          * and starting it together with all other animations
          * contained in the transaction.
-         * <p />
+         * <p>
          * The passed in animator belongs to the transaction,
          * making modifications to it after the transaction
          * consumer returns is undefined.
+         *
+         * @param <T> The type of the animator.
+         * @param animator The animator to take ownership of.
+         * @return The passed in animator.
          *
          * @see #animatorFor(View) if you need a {@link MultiAnimator}.
          */
@@ -324,10 +343,12 @@ public class AnimatorContext implements Animator.AnimatorListener {
         /**
          * Converts the transaction into a compound animator
          * that will play all transaction animations together.
-         * <p />
+         * <p>
          * If the transaction contains only one animation, that
          * animation will be configured against the template (if
          * specified) and returned by this method.
+         *
+         * @return An animator owned by the transaction.
          */
         public Animator toAnimator() {
             if (pending.size() == 1) {
@@ -364,9 +385,9 @@ public class AnimatorContext implements Animator.AnimatorListener {
      */
     public interface Scene {
         /**
-         * Returns the animator context associated with the scene.
-         * <p />
          * Implementors must always return the same instance.
+         *
+         * @return The animator context associated with the scene.
          */
         @NonNull AnimatorContext getAnimatorContext();
     }

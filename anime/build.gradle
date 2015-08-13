@@ -11,6 +11,11 @@ buildscript {
     }
 }
 
+// <http://stackoverflow.com/questions/29663918/android-gradle-javadoc-annotation-does-not-exists>
+configurations {
+    javadocDeps
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
 
@@ -41,6 +46,7 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:support-annotations:22.2.0'
+    javadocDeps 'com.android.support:support-annotations:22.2.0'
 
     testCompile "org.robolectric:robolectric:3.0"
     testCompile 'junit:junit:4.12'
@@ -55,6 +61,25 @@ dependencies {
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
     classifier "source"
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    classpath += configurations.javadocDeps
+    options.links("http://docs.oracle.com/javase/7/docs/api/");
+    exclude '**/BuildConfig.java'
+    exclude '**/R.java'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourceJar
 }
 
 publishing {
@@ -78,6 +103,7 @@ publishing {
                 version = VERSION_NAME
 
                 artifact(sourceJar)
+                artifact(javadocJar)
                 artifact("${project.buildDir}/outputs/aar/${project.name}-release.aar")
 
                 // The publication doesn't know about our dependencies,

@@ -78,6 +78,9 @@ public class AnimatorTemplate {
     /**
      * Returns a new AnimatorTemplate with the specified
      * duration and the called object's interpolator.
+     *
+     * @param newDuration The duration for the new template.
+     * @return The new template with the updated duration.
      */
     public AnimatorTemplate withDuration(long newDuration) {
         return new AnimatorTemplate(newDuration, interpolator);
@@ -86,6 +89,9 @@ public class AnimatorTemplate {
     /**
      * Returns a new AnimatorTemplate with the specified
      * interpolator and the called object's duration.
+     *
+     * @param newInterpolator The interpolator for the new template.
+     * @return The new template with the updated interpolator.
      */
     public AnimatorTemplate withInterpolator(@NonNull Interpolator newInterpolator) {
         return new AnimatorTemplate(duration, newInterpolator);
@@ -99,6 +105,9 @@ public class AnimatorTemplate {
     /**
      * Creates and returns a configured ValueAnimator that will
      * transition between the specified array of colors.
+     *
+     * @param colors The colors to interpolate between.
+     * @return A configured ValueAnimator.
      */
     public ValueAnimator createColorAnimator(@NonNull int... colors) {
         ValueAnimator colorAnimator = ValueAnimator.ofInt((int[]) colors);
@@ -111,6 +120,9 @@ public class AnimatorTemplate {
     /**
      * Creates and returns a configured ValueAnimator that will
      * transition between the specified array of rectangles.
+     *
+     * @param rectangles The Rects to interpolate between.
+     * @return A configured ValueAnimator.
      *
      * @see RectEvaluatorCompat
      */
@@ -129,6 +141,10 @@ public class AnimatorTemplate {
 
     /**
      * Applies the attributes of the template to a given animator, returning that animator.
+     *
+     * @param <T> The type of the animator.
+     * @param animator The animator to apply the template attributes to.
+     * @return The animator.
      */
     public <T extends Animator> T apply(@NonNull T animator) {
         animator.setDuration(duration);
@@ -139,8 +155,11 @@ public class AnimatorTemplate {
     /**
      * Applies the applicable attributes of the template to a given layout transition,
      * returning that layout transition.
-     * <p />
+     * <p>
      * Does not update the interpolators on the layout transition.
+     *
+     * @param transition The layout transition to apply applicable template attributes to.
+     * @return The layout transition.
      */
     public LayoutTransition apply(@NonNull LayoutTransition transition) {
         transition.setDuration(duration);
@@ -149,6 +168,9 @@ public class AnimatorTemplate {
 
     /**
      * Applies the attributes of the template to a given animation, returning that animation.
+     *
+     * @param animation The Animation to apply template attributes to.
+     * @return The animation.
      */
     public Animation apply(@NonNull Animation animation) {
         animation.setDuration(duration);
