@@ -46,6 +46,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     private final List<Runnable> runOnIdle = new ArrayList<>();
     private final List<Transaction> runningTransactions = new ArrayList<>();
 
+    private @Nullable AnimatorContext parent;
     private int activeAnimationCount = 0;
 
     private final Handler idleHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
@@ -133,6 +134,9 @@ public class AnimatorContext implements Animator.AnimatorListener {
     public void beginAnimation() {
         idleHandler.removeMessages(MSG_IDLE);
 
+        if (parent != null && activeAnimationCount == 0) {
+            parent.beginAnimation();
+        }
         this.activeAnimationCount++;
 
         if (DEBUG) {
@@ -163,9 +167,39 @@ public class AnimatorContext implements Animator.AnimatorListener {
         }
 
         if (activeAnimationCount == 0) {
+            if (parent != null) {
+                parent.endAnimation();
+            }
+
             idleHandler.removeMessages(MSG_IDLE);
             idleHandler.sendEmptyMessage(MSG_IDLE);
         }
+    }
+
+    /**
+     * Sets the parent for this animator context.
+     * <p />
+     * An active child animator counts as one active
+     * animation on its parent. Child contexts do not
+     * inherit their parent's active state.
+     */
+    public void setParent(@Nullable AnimatorContext parent) {
+        if (this.parent != null && activeAnimationCount > 0) {
+            this.parent.endAnimation();
+        }
+
+        this.parent = parent;
+
+        if (parent != null && activeAnimationCount > 0) {
+            parent.beginAnimation();
+        }
+    }
+
+    /**
+     * Returns the parent context, if any.
+     */
+    public @Nullable AnimatorContext getParent() {
+        return parent;
     }
 
     //endregion
