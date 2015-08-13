@@ -36,6 +36,8 @@ public class RectEvaluatorCompat implements TypeEvaluator<Rect> {
 
     /**
      * Construct an evaluator re-using the given Rect.
+     *
+     * @param reuseRect The Rect instance {@link #evaluate(float, Rect, Rect)} will return.
      */
     public RectEvaluatorCompat(@NonNull Rect reuseRect) {
         rect = reuseRect;

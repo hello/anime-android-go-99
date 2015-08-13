@@ -27,21 +27,21 @@ public class Anime {
     /**
      * For animations that will be run in the middle of a user interaction
      * where just snapping an element off the screen would look bad.
-     * <p />
+     * <p>
      * Also available as <code>@integer/anime_duration_very_fast</code>.
      */
     public static final int DURATION_VERY_FAST = 50;
 
     /**
      * The fastest speed used for a regular animation.
-     * <p />
+     * <p>
      * Also available as <code>@integer/anime_duration_fast</code>.
      */
     public static final int DURATION_FAST = 150;
 
     /**
      * The slowest speed used for a regular animation.
-     * <p />
+     * <p>
      * Also available as <code>@integer/anime_duration_slow</code>.
      */
     public static final int DURATION_SLOW = 350;
@@ -49,7 +49,7 @@ public class Anime {
     /**
      * Typical duration for animations in the Sense app. The
      * original duration constant used by iOS before version 7.
-     * <p />
+     * <p>
      * Also available as <code>@integer/anime_duration_normal</code>.
      */
     public static final int DURATION_NORMAL = 250;
@@ -87,6 +87,12 @@ public class Anime {
     /**
      * Same as the logic from {@link android.animation.FloatEvaluator}
      * without the overhead of auto-boxing operations.
+     *
+     * @param fraction The fraction from the starting to the ending values.
+     * @param start The start value.
+     * @param end The end value.
+     * @return A linear interpolation between the start and end values, given the
+     *         <code>fraction</code> parameter.
      */
     public static float interpolateFloats(float fraction, float start, float end) {
         return start + fraction * (end - start);
@@ -95,6 +101,12 @@ public class Anime {
     /**
      * Same as the logic from {@link android.animation.ArgbEvaluator}
      * without the costs of auto-boxing associated with it.
+     *
+     * @param fraction The fraction from the starting to the ending colors.
+     * @param startColor The start color.
+     * @param endColor The end color.
+     * @return A linear interpolation between the start and end colors, given the
+     *         <code>fraction</code> parameter.
      */
     public static int interpolateColors(float fraction, int startColor, int endColor) {
         int startA = (startColor >> 24) & 0xff;
@@ -120,10 +132,12 @@ public class Anime {
 
     /**
      * Stops any running animation on a given array of views.
-     * <p />
+     * <p>
      * If your view implements custom animations outside of {@link View#animate()},
      * and {@link is.hello.go99.animators.MultiAnimator}, and you want to support
      * this method, you should override {@link View#clearAnimation()}.
+     *
+     * @param forViews The views to cancel running animations on.
      */
     public static void cancelAll(@NonNull View... forViews) {
         for (View forView : forViews) {
@@ -134,6 +148,9 @@ public class Anime {
 
     /**
      * Returns whether or not a given view is known to be animating.
+     *
+     * @param view The view to find the animating status for.
+     * @return true if the view is animating; false otherwise.
      */
     public static boolean isAnimating(@NonNull View view) {
         return animatingViews.contains(view);
@@ -141,6 +158,8 @@ public class Anime {
 
     /**
      * Adds a view to the currently animating set.
+     *
+     * @param view The view that is animating.
      */
     public static void addAnimatingView(@NonNull View view) {
         animatingViews.add(view);
@@ -148,6 +167,8 @@ public class Anime {
 
     /**
      * Removes a view from the currently animating set.
+     *
+     * @param view The view that was animating.
      */
     public static void removeAnimatingView(@NonNull View view) {
         animatingViews.remove(view);
