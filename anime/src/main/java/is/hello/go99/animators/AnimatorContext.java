@@ -33,6 +33,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
+import is.hello.go99.Experimental;
+
 public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Whether or not stack-traces should be printed when {@link #beginAnimation()}
@@ -183,6 +185,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * animation on its parent. Child contexts do not
      * inherit their parent's active state.
      */
+    @Experimental
     public void setParent(@Nullable AnimatorContext parent) {
         if (this.parent != null && activeAnimationCount > 0) {
             this.parent.endAnimation();
@@ -198,6 +201,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Returns the parent context, if any.
      */
+    @Experimental
     public @Nullable AnimatorContext getParent() {
         return parent;
     }
@@ -300,6 +304,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Stops any transactions that are currently running in the animator context.
      */
+    @Experimental
     public void cancelTransactions() {
         for (int i = runningTransactions.size() - 1; i >= 0; i--) {
             runningTransactions.get(i).cancel();
@@ -436,6 +441,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
         /**
          * Cancels the transaction.
          */
+        @Experimental
         public void cancel() {
             if (this.animator != null) {
                 this.animator.cancel();
@@ -446,6 +452,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
         /**
          * Returns whether or not the transaction has been canceled.
          */
+        @Experimental
         public boolean isCanceled() {
             return canceled;
         }
