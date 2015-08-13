@@ -49,6 +49,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
     private final List<Transaction> runningTransactions = new ArrayList<>();
 
     private @Nullable AnimatorContext parent;
+    private @Nullable List<AnimatorContext> children;
     private int activeAnimationCount = 0;
 
     private final Handler idleHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
@@ -179,6 +180,17 @@ public class AnimatorContext implements Animator.AnimatorListener {
     }
 
     /**
+     * Returns the context's children contexts.
+     */
+    @Experimental
+    public @NonNull List<AnimatorContext> getChildren() {
+        if (children == null) {
+            this.children = new ArrayList<>();
+        }
+        return children;
+    }
+
+    /**
      * Sets the parent for this animator context.
      * <p />
      * An active child animator counts as one active
@@ -187,14 +199,20 @@ public class AnimatorContext implements Animator.AnimatorListener {
      */
     @Experimental
     public void setParent(@Nullable AnimatorContext parent) {
-        if (this.parent != null && activeAnimationCount > 0) {
-            this.parent.endAnimation();
+        if (this.parent != null) {
+            if (activeAnimationCount > 0) {
+                this.parent.endAnimation();
+            }
+            this.parent.getChildren().remove(this);
         }
 
         this.parent = parent;
 
-        if (parent != null && activeAnimationCount > 0) {
-            parent.beginAnimation();
+        if (parent != null) {
+            if (activeAnimationCount > 0) {
+                parent.beginAnimation();
+            }
+            parent.getChildren().add(this);
         }
     }
 
@@ -303,6 +321,8 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
     /**
      * Stops any transactions that are currently running in the animator context.
+     * <p />
+     * Also stops any running transactions on child animator contexts.
      */
     @Experimental
     public void cancelTransactions() {
@@ -310,6 +330,12 @@ public class AnimatorContext implements Animator.AnimatorListener {
             runningTransactions.get(i).cancel();
         }
         runningTransactions.clear();
+
+        if (children != null) {
+            for (int i = children.size() - 1; i >= 0; i--) {
+                children.get(i).cancelTransactions();
+            }
+        }
     }
 
     //endregion

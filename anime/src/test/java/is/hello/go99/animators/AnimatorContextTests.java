@@ -32,10 +32,12 @@ import org.robolectric.util.Scheduler;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import is.hello.go99.Anime;
+import is.hello.go99.Experimental;
 import is.hello.go99.Go99TestCase;
 import is.hello.go99.animators.AnimatorContext.Transaction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
@@ -111,6 +113,7 @@ public class AnimatorContextTests extends Go99TestCase {
         verify(fake).removeListener(animatorContext);
     }
 
+    @Experimental
     @Test
     public void transactionCancelingConsistency() throws Exception {
         final AtomicBoolean completedCalled = new AtomicBoolean(false);
@@ -128,11 +131,25 @@ public class AnimatorContextTests extends Go99TestCase {
         assertThat(completedCalled.get(), is(false));
     }
 
+    @Experimental
+    @Test
+    public void cancelTransactionPropagates() throws Exception {
+        AnimatorContext child = spy(new AnimatorContext("Test Child"));
+        child.setParent(animatorContext);
+
+        assertThat(child.getParent(), is(sameInstance(animatorContext)));
+        assertThat(animatorContext.getChildren(), hasItem(sameInstance(child)));
+
+        animatorContext.cancelTransactions();
+        verify(child).cancelTransactions();
+    }
+
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static class TransactionTests extends Go99TestCase {
         private final AnimatorContext animatorContext = new AnimatorContext(getClass().getSimpleName());
 
+        @Experimental
         @Test
         public void toAnimatorConsistency() throws Exception {
             AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
