@@ -16,6 +16,7 @@
 package is.hello.go99.animators;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.os.Handler;
 import android.os.Looper;
@@ -32,6 +33,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
+import is.hello.go99.Experimental;
+
 public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * Whether or not stack-traces should be printed when {@link #beginAnimation()}
@@ -43,7 +46,10 @@ public class AnimatorContext implements Animator.AnimatorListener {
 
     private final String name;
     private final List<Runnable> runOnIdle = new ArrayList<>();
+    private final List<Transaction> runningTransactions = new ArrayList<>();
 
+    private @Nullable AnimatorContext parent;
+    private @Nullable List<AnimatorContext> children;
     private int activeAnimationCount = 0;
 
     private final Handler idleHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
@@ -131,6 +137,9 @@ public class AnimatorContext implements Animator.AnimatorListener {
     public void beginAnimation() {
         idleHandler.removeMessages(MSG_IDLE);
 
+        if (parent != null && activeAnimationCount == 0) {
+            parent.beginAnimation();
+        }
         this.activeAnimationCount++;
 
         if (DEBUG) {
@@ -161,9 +170,58 @@ public class AnimatorContext implements Animator.AnimatorListener {
         }
 
         if (activeAnimationCount == 0) {
+            if (parent != null) {
+                parent.endAnimation();
+            }
+
             idleHandler.removeMessages(MSG_IDLE);
             idleHandler.sendEmptyMessage(MSG_IDLE);
         }
+    }
+
+    /**
+     * Returns the context's children contexts.
+     */
+    @Experimental
+    public @NonNull List<AnimatorContext> getChildren() {
+        if (children == null) {
+            this.children = new ArrayList<>();
+        }
+        return children;
+    }
+
+    /**
+     * Sets the parent for this animator context.
+     * <p />
+     * An active child animator counts as one active
+     * animation on its parent. Child contexts do not
+     * inherit their parent's active state.
+     */
+    @Experimental
+    public void setParent(@Nullable AnimatorContext parent) {
+        if (this.parent != null) {
+            if (activeAnimationCount > 0) {
+                this.parent.endAnimation();
+            }
+            this.parent.getChildren().remove(this);
+        }
+
+        this.parent = parent;
+
+        if (parent != null) {
+            if (activeAnimationCount > 0) {
+                parent.beginAnimation();
+            }
+            parent.getChildren().add(this);
+        }
+    }
+
+    /**
+     * Returns the parent context, if any.
+     */
+    @Experimental
+    public @Nullable AnimatorContext getParent() {
+        return parent;
     }
 
     //endregion
@@ -212,18 +270,33 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param options       The options to apply to the transaction.
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
+     * @return The transaction.
      *
      * @see TransactionOptions  For possible options.
      * @see Transaction         For more information on working with a transaction.
      */
-    public void transaction(final @Nullable AnimatorTemplate template,
-                            final @TransactionOptions int options,
-                            final @NonNull TransactionConsumer consumer,
-                            final @Nullable OnAnimationCompleted onCompleted) {
-        Transaction transaction = new Transaction(this, template);
+    public Transaction transaction(final @Nullable AnimatorTemplate template,
+                                   final @TransactionOptions int options,
+                                   final @NonNull TransactionConsumer consumer,
+                                   final @Nullable OnAnimationCompleted onCompleted) {
+        final Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
+        if (transaction.isCanceled()) {
+            return transaction;
+        }
 
         Animator animator = transaction.toAnimator();
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                runningTransactions.add(transaction);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                runningTransactions.remove(transaction);
+            }
+        });
         if (onCompleted != null) {
             animator.addListener(new OnAnimationCompleted.Adapter(onCompleted));
         }
@@ -232,6 +305,8 @@ public class AnimatorContext implements Animator.AnimatorListener {
         } else {
             animator.start();
         }
+
+        return transaction;
     }
 
     /**
@@ -239,9 +314,28 @@ public class AnimatorContext implements Animator.AnimatorListener {
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
-    public void transaction(@NonNull TransactionConsumer consumer,
-                            @Nullable OnAnimationCompleted onCompleted) {
-        transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+    public Transaction transaction(@NonNull TransactionConsumer consumer,
+                                   @Nullable OnAnimationCompleted onCompleted) {
+        return transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+    }
+
+    /**
+     * Stops any transactions that are currently running in the animator context.
+     * <p />
+     * Also stops any running transactions on child animator contexts.
+     */
+    @Experimental
+    public void cancelTransactions() {
+        for (int i = runningTransactions.size() - 1; i >= 0; i--) {
+            runningTransactions.get(i).cancel();
+        }
+        runningTransactions.clear();
+
+        if (children != null) {
+            for (int i = children.size() - 1; i >= 0; i--) {
+                children.get(i).cancelTransactions();
+            }
+        }
     }
 
     //endregion
@@ -258,6 +352,11 @@ public class AnimatorContext implements Animator.AnimatorListener {
     /**
      * A pending collection of animators that will be run
      * together within a containing animator context.
+     * <p />
+     * Transactions cannot be added to once they are committed,
+     * which happens implicitly when your {@link TransactionConsumer}
+     * returns. After a transaction has been committed, you may safely
+     * retain a reference to it for as long as your circumstances require.
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
@@ -273,6 +372,8 @@ public class AnimatorContext implements Animator.AnimatorListener {
         public final @Nullable AnimatorTemplate template;
 
         private final List<Animator> pending = new ArrayList<>(2);
+        private @Nullable Animator animator;
+        private boolean canceled = false;
 
         /**
          * Construct a transaction with an animator context and template.
@@ -298,6 +399,10 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * consumer returns is undefined.
          */
         public MultiAnimator animatorFor(@NonNull View view) {
+            if (this.animator != null) {
+                throw new IllegalStateException("Cannot modify a transaction after it has been committed");
+            }
+
             MultiAnimator multiAnimator = MultiAnimator.animatorFor(view, animatorContext);
             pending.add(multiAnimator);
             return multiAnimator;
@@ -316,6 +421,10 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * @see #animatorFor(View) if you need a {@link MultiAnimator}.
          */
         public <T extends Animator> T takeOwnership(@NonNull T animator) {
+            if (this.animator != null) {
+                throw new IllegalStateException("Cannot modify a transaction after it has been committed");
+            }
+
             pending.add(animator);
             animator.addListener(animatorContext);
             return animator;
@@ -328,22 +437,50 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * If the transaction contains only one animation, that
          * animation will be configured against the template (if
          * specified) and returned by this method.
+         * <p />
+         * This method has the side-effect of placing the transaction
+         * into the committed state where no new animators may be added.
+         * <p />
+         * Guaranteed to return the same instance for multiple calls.
          */
         public Animator toAnimator() {
-            if (pending.size() == 1) {
-                Animator single = pending.get(0);
-                if (template != null) {
-                    template.apply(single);
+            if (animator == null) {
+                if (pending.size() == 1) {
+                    Animator single = pending.get(0);
+                    if (template != null) {
+                        template.apply(single);
+                    }
+                    this.animator = single;
+                } else {
+                    AnimatorSet set = new AnimatorSet();
+                    set.playTogether(pending);
+                    if (template != null) {
+                        template.apply(set);
+                    }
+                    this.animator = set;
                 }
-                return single;
-            } else {
-                AnimatorSet set = new AnimatorSet();
-                set.playTogether(pending);
-                if (template != null) {
-                    template.apply(set);
-                }
-                return set;
+                pending.clear();
             }
+            return animator;
+        }
+
+        /**
+         * Cancels the transaction.
+         */
+        @Experimental
+        public void cancel() {
+            if (this.animator != null) {
+                this.animator.cancel();
+            }
+            this.canceled = true;
+        }
+
+        /**
+         * Returns whether or not the transaction has been canceled.
+         */
+        @Experimental
+        public boolean isCanceled() {
+            return canceled;
         }
     }
 
