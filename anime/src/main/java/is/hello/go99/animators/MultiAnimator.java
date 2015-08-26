@@ -174,8 +174,13 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     public void onAnimationStart(Animator animation) {
         ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            for (int i = listeners.size() - 1; i >= 0; i--) {
-                listeners.get(i).onAnimationStart(this);
+            // The Animator contract requires that removing listeners
+            // always works. Unfortunately, iterating backwards causes
+            // some of the canned animations to fail. So we make a local
+            // copy of the listeners array and work with that.
+            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            for (AnimatorListener listener : listenersCopy) {
+                listener.onAnimationStart(this);
             }
         }
 
@@ -186,8 +191,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     public void onAnimationEnd(Animator animation) {
         ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            for (int i = listeners.size() - 1; i >= 0; i--) {
-                listeners.get(i).onAnimationEnd(this);
+            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            for (AnimatorListener listener : listenersCopy) {
+                listener.onAnimationEnd(this);
             }
         }
 
@@ -202,8 +208,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     public void onAnimationCancel(Animator animation) {
         ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            for (int i = listeners.size() - 1; i >= 0; i--) {
-                listeners.get(i).onAnimationCancel(this);
+            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            for (AnimatorListener listener : listenersCopy) {
+                listener.onAnimationCancel(this);
             }
         }
 
