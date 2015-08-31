@@ -6,7 +6,9 @@ import android.widget.FrameLayout;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.robolectric.Robolectric;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import is.hello.go99.Go99TestCase;
@@ -22,6 +24,36 @@ public class MultiAnimatorTests extends Go99TestCase {
     @Before
     public void setUp() {
         this.animator = MultiAnimator.animatorFor(fakeView);
+    }
+
+    @Test
+    public void startWithPreExistingAnimations() {
+        Robolectric.getForegroundThreadScheduler().pause();
+
+        MultiAnimator.animatorFor(fakeView)
+                     .addOnAnimationCompleted(new OnAnimationCompleted() {
+                         @Override
+                         public void onAnimationCompleted(boolean finished) {
+                             assertThat(finished, is(false));
+                         }
+                     })
+                     .x(10f)
+                     .start();
+
+        fakeView.animate().start();
+
+        final AtomicBoolean onAnimationCompletedCalled = new AtomicBoolean();
+        animator.addOnAnimationCompleted(new OnAnimationCompleted() {
+            @Override
+            public void onAnimationCompleted(boolean finished) {
+                onAnimationCompletedCalled.set(true);
+            }
+        });
+
+        animator.x(0f);
+        animator.start();
+
+        assertThat(onAnimationCompletedCalled.get(), is(false));
     }
 
     @Test

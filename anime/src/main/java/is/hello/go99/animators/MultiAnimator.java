@@ -236,7 +236,6 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         propertyAnimator.setDuration(duration);
         propertyAnimator.setStartDelay(startDelay);
         propertyAnimator.setInterpolator(interpolator);
-        propertyAnimator.setListener(this);
 
         for (Map.Entry<Property, Float> entry : properties.entrySet()) {
             Property property = entry.getKey();
@@ -266,6 +265,12 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                     break;
             }
         }
+
+        // Needs to happen after specifying the animations,
+        // otherwise if there's a running animation that will
+        // be canceled from calling an animator method, we'll
+        // get unwanted callbacks and bad things will happen.
+        propertyAnimator.setListener(this);
 
         if (animatorContext != null) {
             animatorContext.beginAnimation();
