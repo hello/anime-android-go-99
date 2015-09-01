@@ -1,5 +1,5 @@
 // Used for both the 'aar' file and publish.
-def VERSION_NAME = '0.1.3-SNAPSHOT'
+def VERSION_NAME = '0.1.3'
 def PACKAGE = 'is.hello.go99'
 
 buildscript {
