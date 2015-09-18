@@ -4,22 +4,28 @@ import android.animation.Animator;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
-import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import is.hello.go99.animators.AnimatorContext;
+import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.animators.OnAnimationCompleted;
 
 public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
+    private static final long DELAY_STEP = 20;
+
+    private final AnimatorTemplate animatorTemplate;
     private final AnimatorContext animatorContext;
 
     private final List<Change> pending = new ArrayList<>();
     private final List<Change> running = new ArrayList<>();
     private @Nullable Animator currentTransaction;
 
-    public AmplitudeItemAnimator(@NonNull AnimatorContext animatorContext) {
+    public AmplitudeItemAnimator(@NonNull AnimatorTemplate animatorTemplate,
+                                 @NonNull AnimatorContext animatorContext) {
+        this.animatorTemplate = animatorTemplate;
         this.animatorContext = animatorContext;
 
         setSupportsChangeAnimations(false);
@@ -30,19 +36,21 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
     @Override
     public void runPendingAnimations() {
-        this.currentTransaction = animatorContext.transaction(new AnimatorContext.TransactionConsumer() {
+        Collections.sort(pending);
+
+        this.currentTransaction = animatorContext.transaction(animatorTemplate, AnimatorContext.OPTIONS_DEFAULT, new AnimatorContext.TransactionConsumer() {
             @Override
             public void consume(@NonNull AnimatorContext.Transaction transaction) {
+                long delay = 0;
                 for (final Change change : pending) {
                     final AmplitudeAdapter.ViewHolder viewHolder = change.viewHolder;
-                    if (viewHolder.getAdapterPosition() == RecyclerView.NO_POSITION) {
-                        continue;
-                    }
-
                     change.animation.animate(AmplitudeItemAnimator.this,
                                              viewHolder,
+                                             delay,
                                              transaction);
                     running.add(change);
+
+                    delay += DELAY_STEP;
                 }
 
                 pending.clear();
@@ -97,7 +105,6 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
     @Override
     public boolean animateRemove(RecyclerView.ViewHolder holder) {
-        holder.itemView.setAlpha(1f);
         pending.add(new Change(Change.Animation.REMOVE, (AmplitudeAdapter.ViewHolder) holder));
         return true;
     }
@@ -120,7 +127,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
     //endregion
 
 
-    static class Change {
+    static class Change implements Comparable<Change> {
         final Animation animation;
         final AmplitudeAdapter.ViewHolder viewHolder;
 
@@ -129,18 +136,26 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
             this.viewHolder = viewHolder;
         }
 
+        @Override
+        public int compareTo(@NonNull Change other) {
+            return this.viewHolder.getAdapterPosition() - other.viewHolder.getAdapterPosition();
+        }
+
         enum Animation {
             ADD {
                 @Override
                 void animate(@NonNull AmplitudeItemAnimator animator,
                              @NonNull AmplitudeAdapter.ViewHolder viewHolder,
+                             long animationDelay,
                              @NonNull AnimatorContext.Transaction transaction) {
                     animator.dispatchAddStarting(viewHolder);
 
                     transaction.animatorFor(viewHolder.amplitudeView)
-                               .fadeIn();
+                               .withStartDelay(animationDelay)
+                               .alpha(1f);
 
                     viewHolder.amplitudeView.animateToAmplitude(viewHolder.getAmplitude(),
+                                                                animationDelay,
                                                                 transaction);
                 }
 
@@ -154,11 +169,17 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
                 @Override
                 void animate(@NonNull AmplitudeItemAnimator animator,
                              @NonNull AmplitudeAdapter.ViewHolder viewHolder,
+                             long animationDelay,
                              @NonNull AnimatorContext.Transaction transaction) {
                     animator.dispatchRemoveStarting(viewHolder);
 
                     transaction.animatorFor(viewHolder.amplitudeView)
-                               .fadeOut(View.VISIBLE);
+                               .withStartDelay(animationDelay)
+                               .alpha(0f);
+
+                    viewHolder.amplitudeView.animateToAmplitude(0f,
+                                                                animationDelay,
+                                                                transaction);
                 }
 
                 @Override
@@ -170,6 +191,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
             abstract void animate(@NonNull AmplitudeItemAnimator animator,
                                   @NonNull AmplitudeAdapter.ViewHolder viewHolder,
+                                  long animationDelay,
                                   @NonNull AnimatorContext.Transaction transaction);
             abstract void completed(@NonNull AmplitudeItemAnimator animator,
                                     @NonNull AmplitudeAdapter.ViewHolder viewHolder);

@@ -1,20 +1,20 @@
 package is.hello.go99.example.recycler;
 
+import android.content.res.Resources;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.ViewGroup;
 
-import is.hello.go99.animators.AnimatorContext;
+import is.hello.go99.example.R;
 import is.hello.go99.example.view.AmplitudeView;
 
 public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.ViewHolder> {
-    private final AnimatorContext animatorContext;
+    private final int amplitudeHeight;
     private float[] amplitudes = {};
 
-    public AmplitudeAdapter(@NonNull AnimatorContext animatorContext) {
-        this.animatorContext = animatorContext;
+    public AmplitudeAdapter(@NonNull Resources resources) {
+        this.amplitudeHeight = resources.getDimensionPixelSize(R.dimen.view_amplitude_height);
     }
-
 
     //region Binding
 
@@ -60,13 +60,15 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         final AmplitudeView view = new AmplitudeView(parent.getContext());
-        view.setAnimatorContext(animatorContext);
+        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
+                                                           amplitudeHeight));
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         final float amplitude = getAmplitude(position);
+        holder.amplitude = amplitude;
         holder.amplitudeView.setAmplitude(amplitude);
     }
 
@@ -80,6 +82,7 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         final AmplitudeView amplitudeView;
+        float amplitude;
 
         ViewHolder(@NonNull AmplitudeView amplitudeView) {
             super(amplitudeView);
@@ -92,7 +95,7 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
         }
 
         public float getAmplitude() {
-            return AmplitudeAdapter.this.getAmplitude(getAdapterPosition());
+            return amplitude;
         }
     }
 }

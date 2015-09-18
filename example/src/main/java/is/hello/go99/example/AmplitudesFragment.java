@@ -3,6 +3,7 @@ package is.hello.go99.example;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
@@ -13,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import is.hello.go99.animators.AnimatorContext;
+import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.example.data.AmplitudeSource;
 import is.hello.go99.example.data.RandomAmplitudeSource;
 import is.hello.go99.example.recycler.AmplitudeAdapter;
@@ -57,10 +59,13 @@ public class AmplitudesFragment extends Fragment implements AnimatorContext.Scen
         this.recyclerView = (RecyclerView) view.findViewById(R.id.fragment_amplitudes_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.setHasFixedSize(true);
-        recyclerView.setItemAnimator(new AmplitudeItemAnimator(getAnimatorContext()));
 
-        this.adapter = new AmplitudeAdapter(getAnimatorContext());
+        final AnimatorTemplate animatorTemplate = new AnimatorTemplate(new FastOutSlowInInterpolator());
+        recyclerView.setItemAnimator(new AmplitudeItemAnimator(animatorTemplate, getAnimatorContext()));
+
+        this.adapter = new AmplitudeAdapter(getResources());
         recyclerView.setAdapter(adapter);
+
         return view;
     }
 
@@ -102,13 +107,19 @@ public class AmplitudesFragment extends Fragment implements AnimatorContext.Scen
 
     @Override
     public void onRefresh() {
+        adapter.clear();
         amplitudeSource.update();
     }
 
     @Override
-    public void onAmplitudesReady(@NonNull float[] amplitudes) {
-        adapter.bindAmplitudes(amplitudes);
+    public void onAmplitudesReady(@NonNull final float[] amplitudes) {
         swipeRefreshLayout.setRefreshing(false);
+        getAnimatorContext().runWhenIdle(new Runnable() {
+            @Override
+            public void run() {
+                adapter.bindAmplitudes(amplitudes);
+            }
+        });
     }
 
     @Override
@@ -119,7 +130,6 @@ public class AmplitudesFragment extends Fragment implements AnimatorContext.Scen
         }
 
         swipeRefreshLayout.setRefreshing(false);
-        adapter.clear();
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(R.string.title_error);
