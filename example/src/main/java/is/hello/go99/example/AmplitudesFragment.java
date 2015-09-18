@@ -18,7 +18,9 @@ import is.hello.go99.example.data.RandomAmplitudeSource;
 import is.hello.go99.example.recycler.AmplitudeAdapter;
 import is.hello.go99.example.recycler.AmplitudeItemAnimator;
 
-public class AmplitudesFragment extends Fragment implements AnimatorContext.Scene, SwipeRefreshLayout.OnRefreshListener, AmplitudeSource.Consumer {
+public class AmplitudesFragment extends Fragment
+        implements AnimatorContext.Scene, SwipeRefreshLayout.OnRefreshListener,
+        AmplitudeSource.Consumer {
     private static final String SAVED_SOURCE_STATE = AmplitudesFragment.class.getName() + "#SAVED_SOURCE_STATE";
 
     private final AnimatorContext animatorContext = new AnimatorContext(getClass().getSimpleName());
