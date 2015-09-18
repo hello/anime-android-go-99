@@ -3,7 +3,6 @@ package is.hello.go99.example;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import is.hello.go99.animators.AnimatorContext;
-import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.example.data.AmplitudeSource;
 import is.hello.go99.example.data.RandomAmplitudeSource;
 import is.hello.go99.example.recycler.AmplitudeAdapter;
@@ -55,13 +53,14 @@ public class AmplitudesFragment extends Fragment implements AnimatorContext.Scen
 
         this.swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.fragment_amplitudes_swipe_refresh);
         swipeRefreshLayout.setOnRefreshListener(this);
+        swipeRefreshLayout.setColorSchemeResources(R.color.accent, R.color.primary_dark,
+                                                   R.color.accent_dark, R.color.primary);
 
         this.recyclerView = (RecyclerView) view.findViewById(R.id.fragment_amplitudes_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.setHasFixedSize(true);
 
-        final AnimatorTemplate animatorTemplate = new AnimatorTemplate(new FastOutSlowInInterpolator());
-        recyclerView.setItemAnimator(new AmplitudeItemAnimator(animatorTemplate, getAnimatorContext()));
+        recyclerView.setItemAnimator(new AmplitudeItemAnimator(getAnimatorContext()));
 
         this.adapter = new AmplitudeAdapter(getResources());
         recyclerView.setAdapter(adapter);

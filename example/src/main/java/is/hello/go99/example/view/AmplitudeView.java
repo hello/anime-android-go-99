@@ -113,6 +113,7 @@ public class AmplitudeView extends View {
 
     public void animateToAmplitude(final float newAmplitude,
                                    long animationDelay,
+                                   @NonNull AnimatorTemplate animatorTemplate,
                                    @NonNull AnimatorContext.Transaction transaction) {
         if (changeAnimator != null) {
             changeAnimator.cancel();
@@ -120,7 +121,7 @@ public class AmplitudeView extends View {
 
         final @ColorInt float oldAmplitude = this.amplitude;
         final @ColorInt int[] colors = this.colors.getAnimatorColors(oldAmplitude, newAmplitude);
-        this.changeAnimator = AnimatorTemplate.DEFAULT.createColorAnimator(colors);
+        this.changeAnimator = animatorTemplate.createColorAnimator(colors);
         changeAnimator.setStartDelay(animationDelay);
         changeAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override

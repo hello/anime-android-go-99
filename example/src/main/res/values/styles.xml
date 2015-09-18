@@ -1,6 +1,8 @@
 <resources>
 
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="android:windowBackground">@color/amplitude_background</item>
+
         <item name="dialogTheme">@style/AppTheme.Dialog</item>
 
         <item name="colorPrimary">@color/primary</item>

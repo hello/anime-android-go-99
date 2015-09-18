@@ -3,5 +3,6 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
 
-    <dimen name="view_amplitude_height">60dp</dimen>
+    <dimen name="view_amplitude_height_min">30dp</dimen>
+    <dimen name="view_amplitude_height_max">60dp</dimen>
 </resources>
