@@ -5,15 +5,21 @@ import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.ViewGroup;
 
+import java.util.Random;
+
 import is.hello.go99.example.R;
 import is.hello.go99.example.view.AmplitudeView;
 
 public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.ViewHolder> {
-    private final int amplitudeHeight;
+    private final Random random = new Random();
+    private final int amplitudeHeightMin;
+    private final int amplitudeHeightMax;
+
     private float[] amplitudes = {};
 
     public AmplitudeAdapter(@NonNull Resources resources) {
-        this.amplitudeHeight = resources.getDimensionPixelSize(R.dimen.view_amplitude_height);
+        this.amplitudeHeightMin = resources.getDimensionPixelSize(R.dimen.view_amplitude_height_min);
+        this.amplitudeHeightMax = resources.getDimensionPixelSize(R.dimen.view_amplitude_height_max);
     }
 
     //region Binding
@@ -48,6 +54,10 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
 
     //region Rendering
 
+    private int generateHeight() {
+        return amplitudeHeightMin + random.nextInt(amplitudeHeightMax - amplitudeHeightMin + 1);
+    }
+
     @Override
     public int getItemCount() {
         return amplitudes.length;
@@ -61,7 +71,7 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         final AmplitudeView view = new AmplitudeView(parent.getContext());
         view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
-                                                           amplitudeHeight));
+                                                           generateHeight()));
         return new ViewHolder(view);
     }
 

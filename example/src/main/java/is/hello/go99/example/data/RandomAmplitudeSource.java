@@ -131,6 +131,13 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
             for (int i = 0; i < count; i++) {
                 amplitudes[i] = random.nextFloat();
             }
+
+            try {
+                Thread.sleep(700);
+            } catch (InterruptedException e) {
+                Log.e(getClass().getSimpleName(), "sleep interrupted", e);
+            }
+
             return amplitudes;
         }
 
