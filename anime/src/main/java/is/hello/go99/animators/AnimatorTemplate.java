@@ -109,7 +109,7 @@ public class AnimatorTemplate {
      * @param colors The colors to interpolate between.
      * @return A configured ValueAnimator.
      */
-    public ValueAnimator createColorAnimator(@NonNull int... colors) {
+    public @NonNull ValueAnimator createColorAnimator(@NonNull int... colors) {
         ValueAnimator colorAnimator = ValueAnimator.ofInt((int[]) colors);
         colorAnimator.setEvaluator(new ArgbEvaluator());
         colorAnimator.setInterpolator(interpolator);
@@ -126,7 +126,7 @@ public class AnimatorTemplate {
      *
      * @see RectEvaluatorCompat
      */
-    public ValueAnimator createRectAnimator(@NonNull Rect... rectangles) {
+    public @NonNull ValueAnimator createRectAnimator(@NonNull Rect... rectangles) {
         ValueAnimator rectAnimator = ValueAnimator.ofObject(new RectEvaluatorCompat(),
                                                             (Object[]) rectangles);
         rectAnimator.setInterpolator(interpolator);
