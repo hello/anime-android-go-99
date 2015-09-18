@@ -219,13 +219,15 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
+     * @return The animator used by the transaction. The caller <em>must not</em> call {@link Animator#start()}.
+     *
      * @see TransactionOptions  For possible options.
      * @see Transaction         For more information on working with a transaction.
      */
-    public void transaction(final @Nullable AnimatorTemplate template,
-                            final @TransactionOptions int options,
-                            final @NonNull TransactionConsumer consumer,
-                            final @Nullable OnAnimationCompleted onCompleted) {
+    public Animator transaction(final @Nullable AnimatorTemplate template,
+                                final @TransactionOptions int options,
+                                final @NonNull TransactionConsumer consumer,
+                                final @Nullable OnAnimationCompleted onCompleted) {
         Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
 
@@ -238,6 +240,7 @@ public class AnimatorContext implements Animator.AnimatorListener {
         } else {
             animator.start();
         }
+        return animator;
     }
 
     /**
@@ -246,11 +249,13 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
+     * @return The animator used by the transaction. The caller <em>must not</em> call {@link Animator#start()}.
+     *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
-    public void transaction(@NonNull TransactionConsumer consumer,
-                            @Nullable OnAnimationCompleted onCompleted) {
-        transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+    public Animator transaction(@NonNull TransactionConsumer consumer,
+                                @Nullable OnAnimationCompleted onCompleted) {
+        return transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
     }
 
     //endregion
