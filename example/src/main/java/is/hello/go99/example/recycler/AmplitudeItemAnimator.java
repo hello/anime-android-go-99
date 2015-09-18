@@ -17,9 +17,9 @@ import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.animators.OnAnimationCompleted;
 
 public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
-    private static final long DELAY_STEP = 20;
-
     private final AnimatorContext animatorContext;
+
+    private long delayStep = 20;
     private @NonNull AnimatorTemplate addTemplate;
     private @NonNull AnimatorTemplate removeTemplate;
 
@@ -38,6 +38,14 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
         this.removeTemplate = new AnimatorTemplate(Anime.DURATION_FAST,
                                                    new FastOutLinearInInterpolator());
         setSupportsChangeAnimations(false);
+    }
+
+    public long getDelayStep() {
+        return delayStep;
+    }
+
+    public void setDelayStep(long delayStep) {
+        this.delayStep = delayStep;
     }
 
     @Override
@@ -81,7 +89,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
                                              transaction);
                     running.add(change);
 
-                    delay += DELAY_STEP;
+                    delay += delayStep;
                 }
 
                 pending.clear();
