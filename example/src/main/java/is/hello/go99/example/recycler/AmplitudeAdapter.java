@@ -3,10 +3,12 @@ package is.hello.go99.example.recycler;
 import android.content.res.Resources;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.Random;
 
+import is.hello.go99.Anime;
 import is.hello.go99.example.R;
 import is.hello.go99.example.view.AmplitudeView;
 
@@ -15,9 +17,12 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
     private final int amplitudeHeightMin;
     private final int amplitudeHeightMax;
 
+    private final OnClickListener onClickListener;
     private float[] amplitudes = {};
 
-    public AmplitudeAdapter(@NonNull Resources resources) {
+    public AmplitudeAdapter(@NonNull Resources resources,
+                            @NonNull OnClickListener onClickListener) {
+        this.onClickListener = onClickListener;
         this.amplitudeHeightMin = resources.getDimensionPixelSize(R.dimen.view_amplitude_height_min);
         this.amplitudeHeightMax = resources.getDimensionPixelSize(R.dimen.view_amplitude_height_max);
     }
@@ -84,13 +89,13 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
 
     @Override
     public void onViewRecycled(ViewHolder holder) {
-        holder.clearAnimation();
+        holder.amplitudeView.clearAnimation();
     }
 
     //endregion
 
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         final AmplitudeView amplitudeView;
         float amplitude;
 
@@ -98,14 +103,25 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
             super(amplitudeView);
 
             this.amplitudeView = amplitudeView;
-        }
-
-        public void clearAnimation() {
-            amplitudeView.clearAnimation();
+            amplitudeView.setOnClickListener(this);
         }
 
         public float getAmplitude() {
             return amplitude;
         }
+
+        @Override
+        public void onClick(View ignored) {
+            if (getAdapterPosition() == RecyclerView.NO_POSITION ||
+                    Anime.isAnimating(amplitudeView)) {
+                return;
+            }
+
+            onClickListener.onItemClicked(this);
+        }
+    }
+
+    public interface OnClickListener {
+        void onItemClicked(@NonNull ViewHolder viewHolder);
     }
 }
