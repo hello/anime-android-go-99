@@ -5,4 +5,9 @@
 
     <dimen name="view_amplitude_height_min">30dp</dimen>
     <dimen name="view_amplitude_height_max">60dp</dimen>
+
+    <dimen name="popup_info_tooltip_overlay">8dp</dimen>
+    <dimen name="popup_info_tooltip_left_inset">4dp</dimen>
+    <dimen name="popup_info_tooltip_padding_vertical">6dp</dimen>
+    <dimen name="popup_info_tooltip_padding_horizontal">10dp</dimen>
 </resources>

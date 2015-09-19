@@ -24,4 +24,9 @@
         <item name="colorControlHighlight">@color/accent_dark</item>
     </style>
 
+    <style name="AppTheme.TooltipAnimation" parent="android:Animation">
+        <item name="android:windowEnterAnimation">@anim/anime_fade_in</item>
+        <item name="android:windowExitAnimation">@anim/anime_fade_out</item>
+    </style>
+
 </resources>
