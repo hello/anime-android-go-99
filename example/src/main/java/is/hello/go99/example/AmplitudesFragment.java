@@ -12,8 +12,13 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnticipateOvershootInterpolator;
+import android.widget.Button;
 
 import is.hello.go99.Anime;
 import is.hello.go99.animators.AnimatorContext;
@@ -24,6 +29,8 @@ import is.hello.go99.example.data.RandomAmplitudeSource;
 import is.hello.go99.example.recycler.AmplitudeAdapter;
 import is.hello.go99.example.recycler.AmplitudeItemAnimator;
 import is.hello.go99.example.view.InfoTooltipPopup;
+
+import static is.hello.go99.animators.MultiAnimator.animatorFor;
 
 public class AmplitudesFragment extends Fragment
         implements AnimatorContext.Scene, SwipeRefreshLayout.OnRefreshListener,
@@ -40,8 +47,13 @@ public class AmplitudesFragment extends Fragment
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerView;
     private AmplitudeAdapter adapter;
+    private Button generateData;
+
+    private MenuItem longAnimationsItem;
+    private MenuItem clearItem;
 
     private @Nullable InfoTooltipPopup infoTooltipPopup;
+    private AmplitudeItemAnimator itemAnimator;
 
 
     //region Lifecycle
@@ -58,6 +70,7 @@ public class AmplitudesFragment extends Fragment
             }
         }
 
+        setHasOptionsMenu(true);
         setRetainInstance(true);
     }
 
@@ -74,10 +87,19 @@ public class AmplitudesFragment extends Fragment
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.setHasFixedSize(true);
 
-        recyclerView.setItemAnimator(new AmplitudeItemAnimator(getAnimatorContext()));
+        this.itemAnimator = new AmplitudeItemAnimator(getAnimatorContext());
+        recyclerView.setItemAnimator(itemAnimator);
 
         this.adapter = new AmplitudeAdapter(getResources(), this);
         recyclerView.setAdapter(adapter);
+
+        this.generateData = (Button) view.findViewById(R.id.fragment_amplitudes_generate_data);
+        generateData.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View ignored) {
+                onRefresh();
+            }
+        });
 
         return view;
     }
@@ -105,6 +127,61 @@ public class AmplitudesFragment extends Fragment
         this.swipeRefreshLayout = null;
         this.recyclerView = null;
         this.adapter = null;
+        this.itemAnimator = null;
+    }
+
+    //endregion
+
+
+    //region Menu
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_amplitudes, menu);
+
+        this.longAnimationsItem = menu.findItem(R.id.action_long_animations);
+        this.clearItem = menu.findItem(R.id.action_clear);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        longAnimationsItem.setChecked(itemAnimator.useLongDuration());
+        clearItem.setEnabled(adapter.getItemCount() > 0 && !swipeRefreshLayout.isRefreshing());
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_long_animations: {
+                final boolean newValue = !itemAnimator.useLongDuration();
+                itemAnimator.setUseLongDuration(newValue);
+                item.setChecked(newValue);
+                return true;
+            }
+
+            case R.id.action_clear: {
+                if (adapter.getItemCount() > 0 && !swipeRefreshLayout.isRefreshing()) {
+                    adapter.clear();
+                    itemAnimator.runAfterAnimationsDone(new Runnable() {
+                        @Override
+                        public void run() {
+                            showGenerateData();
+                        }
+                    });
+                }
+                return true;
+            }
+
+            default: {
+                return super.onOptionsItemSelected(item);
+            }
+        }
+    }
+
+    @Override
+    public void onDestroyOptionsMenu() {
+        this.longAnimationsItem = null;
+        this.clearItem = null;
     }
 
     //endregion
@@ -120,6 +197,10 @@ public class AmplitudesFragment extends Fragment
 
     @Override
     public void onRefresh() {
+        if (generateData.isShown()) {
+            hideInitialCallToAction();
+        }
+
         adapter.clear();
         amplitudeSource.update();
     }
@@ -155,7 +236,51 @@ public class AmplitudesFragment extends Fragment
     //endregion
 
 
-    //region Item Animations
+    //region Animations
+
+    private void hideInitialCallToAction() {
+        final long duration = itemAnimator.useLongDuration()
+                ? Anime.DURATION_NORMAL * 2L
+                : Anime.DURATION_NORMAL;
+        animatorFor(generateData, getAnimatorContext())
+                .withInterpolator(new AnticipateOvershootInterpolator())
+                .withDuration(duration)
+                .alpha(0f)
+                .scale(0f)
+                .addOnAnimationCompleted(new OnAnimationCompleted() {
+                    @Override
+                    public void onAnimationCompleted(boolean finished) {
+                        if (finished) {
+                            generateData.setVisibility(View.INVISIBLE);
+                            generateData.setScaleX(1f);
+                            generateData.setScaleY(1f);
+                            generateData.setAlpha(1f);
+                        }
+                    }
+                })
+                .start();
+    }
+
+    private void showGenerateData() {
+        final long duration = itemAnimator.useLongDuration()
+                ? Anime.DURATION_NORMAL * 2L
+                : Anime.DURATION_NORMAL;
+        animatorFor(generateData, getAnimatorContext())
+                .withInterpolator(new AnticipateOvershootInterpolator())
+                .withDuration(duration)
+                .addOnAnimationWillStart(new Runnable() {
+                    @Override
+                    public void run() {
+                        generateData.setAlpha(0f);
+                        generateData.setScaleX(0f);
+                        generateData.setScaleY(0f);
+                        generateData.setVisibility(View.VISIBLE);
+                    }
+                })
+                .alpha(1f)
+                .scale(1f)
+                .start();
+    }
 
     @Override
     public void onItemClicked(@NonNull AmplitudeAdapter.ViewHolder viewHolder) {

@@ -22,6 +22,8 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
     private long delayStep = 20;
     private @NonNull AnimatorTemplate addTemplate;
     private @NonNull AnimatorTemplate removeTemplate;
+    private boolean useLongDuration = false;
+    private @Nullable Runnable runAfterNextAnimationComplete;
 
     private final List<Change> pending = new ArrayList<>();
     private final List<Change> running = new ArrayList<>();
@@ -68,6 +70,25 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
         return removeTemplate.duration;
     }
 
+    public void setUseLongDuration(boolean useLongDuration) {
+        if (useLongDuration != this.useLongDuration) {
+            if (useLongDuration) {
+                setAddDuration(getAddDuration() * 2L);
+                setRemoveDuration(getRemoveDuration() * 2L);
+                setDelayStep(getDelayStep() * 2L);
+            } else {
+                setAddDuration(getAddDuration() / 2L);
+                setRemoveDuration(getRemoveDuration() / 2L);
+                setDelayStep(getDelayStep() / 2L);
+            }
+            this.useLongDuration = useLongDuration;
+        }
+    }
+
+    public boolean useLongDuration() {
+        return useLongDuration;
+    }
+
     //endregion
 
 
@@ -105,6 +126,10 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
                 if (finished) {
                     dispatchAnimationsFinished();
+                    if (runAfterNextAnimationComplete != null) {
+                        runAfterNextAnimationComplete.run();
+                    }
+                    AmplitudeItemAnimator.this.runAfterNextAnimationComplete = null;
                     AmplitudeItemAnimator.this.currentTransaction = null;
                 }
             }
@@ -125,7 +150,11 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
     @Override
     public boolean isRunning() {
-        return (currentTransaction != null && currentTransaction.isRunning());
+        return (!pending.isEmpty() || currentTransaction != null && currentTransaction.isRunning());
+    }
+
+    public void runAfterAnimationsDone(@NonNull Runnable runnable) {
+        this.runAfterNextAnimationComplete = runnable;
     }
 
     //endregion
