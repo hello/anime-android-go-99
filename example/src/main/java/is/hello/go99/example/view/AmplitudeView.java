@@ -23,6 +23,8 @@ import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.example.R;
 
 public class AmplitudeView extends View {
+    private static final String CHANGE_ANIMATOR_NAME = AmplitudeView.class.getSimpleName() + "#changeAnimator";
+
     private final Paint fillPaint = new Paint();
     private final Colors colors;
     private int alpha = 255;
@@ -144,7 +146,7 @@ public class AmplitudeView extends View {
             }
         });
 
-        transaction.takeOwnership(changeAnimator);
+        transaction.takeOwnership(changeAnimator, CHANGE_ANIMATOR_NAME);
     }
 
     //endregion

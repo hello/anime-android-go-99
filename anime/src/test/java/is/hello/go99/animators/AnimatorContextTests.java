@@ -21,6 +21,7 @@ import android.animation.TimeInterpolator;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.FrameLayout;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class AnimatorContextTests extends Go99TestCase {
     @Test
     public void negativeCounterIsIllegal() throws Exception {
         try {
-            animatorContext.endAnimation();
+            animatorContext.endAnimation("Not real!");
         } catch (IllegalStateException ignored) {
             return;
         }
@@ -74,38 +75,43 @@ public class AnimatorContextTests extends Go99TestCase {
 
         taskWasRun.set(false);
 
-        Scheduler scheduler = Robolectric.getForegroundThreadScheduler();
+        final Scheduler scheduler = Robolectric.getForegroundThreadScheduler();
 
-        animatorContext.beginAnimation();
+        animatorContext.beginAnimation("Test animation");
         animatorContext.runWhenIdle(task);
         assertThat(taskWasRun.get(), is(false));
 
         // Otherwise the animator context's Handler will
         // execute anything sent to it immediately.
         scheduler.pause();
-        animatorContext.endAnimation();
+        animatorContext.endAnimation("Test animation");
         assertThat(taskWasRun.get(), is(false));
 
-        animatorContext.beginAnimation();
+        animatorContext.beginAnimation("Test animation");
         assertThat(taskWasRun.get(), is(false));
 
-        animatorContext.endAnimation();
+        animatorContext.endAnimation("Test animation");
         scheduler.advanceToLastPostedRunnable();
         assertThat(taskWasRun.get(), is(true));
     }
 
     @Test
-    public void listenerFunctionality() throws Exception {
-        AnimatorContext animatorContext = spy(this.animatorContext);
-        AnimatorSet fake = spy(new AnimatorSet());
-        fake.addListener(animatorContext);
+    public void bind() throws Exception {
+        final AnimatorContext animatorContext = spy(this.animatorContext);
+        final AnimatorSet fake = spy(new AnimatorSet());
+        animatorContext.bind(fake, "Test animation");
 
-        animatorContext.onAnimationStart(fake);
-        verify(animatorContext).beginAnimation();
+        fake.getListeners().get(0).onAnimationStart(fake);
+        verify(animatorContext).beginAnimation("Test animation");
 
-        animatorContext.onAnimationEnd(fake);
-        verify(animatorContext).endAnimation();
-        verify(fake).removeListener(animatorContext);
+        fake.getListeners().get(0).onAnimationEnd(fake);
+        verify(animatorContext).endAnimation("Test animation");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void bindBlocksNotBindable() throws Exception {
+        final FrameLayout fakeView = new FrameLayout(getContext());
+        animatorContext.bind(MultiAnimator.animatorFor(fakeView, animatorContext), "Test animator");
     }
 
 
@@ -115,15 +121,15 @@ public class AnimatorContextTests extends Go99TestCase {
 
         @Test
         public void toAnimatorSingle() throws Exception {
-            AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+            final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
                                                              new AccelerateDecelerateInterpolator());
 
-            AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
+            final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
                                                                                  template);
-            AnimatorSet testAnimator = new AnimatorSet();
-            single.takeOwnership(testAnimator);
+            final AnimatorSet testAnimator = new AnimatorSet();
+            single.takeOwnership(testAnimator, "Test animation");
 
-            Animator animator1 = single.toAnimator();
+            final Animator animator1 = single.toAnimator();
             assertThat(animator1, is(sameInstance((Animator) testAnimator)));
             assertThat(animator1.getDuration(),
                        is(equalTo(template.duration)));
@@ -133,18 +139,18 @@ public class AnimatorContextTests extends Go99TestCase {
 
         @Test
         public void toAnimatorMultiple() throws Exception {
-            AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+            final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
                                                              new AccelerateDecelerateInterpolator());
 
-            AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
+            final AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
                                                                                    template);
 
-            AnimatorSet testAnimator1 = new AnimatorSet();
-            AnimatorSet testAnimator2 = new AnimatorSet();
-            multiple.takeOwnership(testAnimator1);
-            multiple.takeOwnership(testAnimator2);
+            final AnimatorSet testAnimator1 = new AnimatorSet();
+            final AnimatorSet testAnimator2 = new AnimatorSet();
+            multiple.takeOwnership(testAnimator1, "Test animation 1");
+            multiple.takeOwnership(testAnimator2, "Test animation 2");
 
-            Animator animator2 = multiple.toAnimator();
+            final Animator animator2 = multiple.toAnimator();
             assertThat(animator2, is(not(sameInstance((Animator) testAnimator1))));
             assertThat(animator2.getDuration(),
                        is(equalTo(template.duration)));
