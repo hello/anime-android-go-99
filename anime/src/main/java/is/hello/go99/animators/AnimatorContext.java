@@ -16,6 +16,7 @@
 package is.hello.go99.animators;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.os.Handler;
 import android.os.Looper;
@@ -29,13 +30,14 @@ import android.view.View;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AnimatorContext implements Animator.AnimatorListener {
+public class AnimatorContext {
     /**
-     * Whether or not stack-traces should be printed when {@link #beginAnimation()}
-     * and {@link #endAnimation()} are called. Provided for debugging dangling animations.
+     * Whether or not stack-traces should be printed when {@link #beginAnimation(String)}
+     * and {@link #endAnimation(String)} are called. Provided for debugging dangling animations.
      */
     public static boolean DEBUG = false;
 
@@ -133,14 +135,16 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * a context. E.g. this can be used to prevent unwanted
      * animations from running when a user is swiping between
      * elements on a screen.
+     *
+     * @param name The name of the animation, used for debugging.
      */
-    public void beginAnimation() {
+    public void beginAnimation(@NonNull String name) {
         idleHandler.removeMessages(MSG_IDLE);
 
         this.activeAnimationCount++;
 
         if (DEBUG) {
-            printTrace("beginAnimation [" + activeAnimationCount + "]");
+            printTrace("beginAnimation('" + name + "') [" + activeAnimationCount + "]");
         }
     }
 
@@ -150,20 +154,23 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * If the counter reaches zero with this call, on the next
      * looper cycle any queued idle tasks will be executed.
      * <p>
-     * Calling {@link #beginAnimation()} before the next looper
+     * Calling {@link #beginAnimation(String)} before the next looper
      * cycle will cause those tasks to remain queued.
      *
-     * @see #beginAnimation() for rationale behind this API design.
+     * @param name The name of the animation, used for debugging.
+     *
+     * @see #beginAnimation(String) for rationale behind this API design.
      */
-    public void endAnimation() {
+    public void endAnimation(@NonNull String name) {
         if (activeAnimationCount == 0) {
-            throw new IllegalStateException("No active animations to end in " + toString());
+            throw new IllegalStateException("Animation '" + name + "'" +
+                                                    " ended more than once in " + toString());
         }
 
         this.activeAnimationCount--;
 
         if (DEBUG) {
-            printTrace("endAnimation [" + activeAnimationCount + "]");
+            printTrace("endAnimation (" + name + ") [" + activeAnimationCount + "]");
         }
 
         if (activeAnimationCount == 0) {
@@ -172,33 +179,25 @@ public class AnimatorContext implements Animator.AnimatorListener {
         }
     }
 
+    /**
+     * Binds the animator context to the begin/end animation events of a given animator.
+     *
+     * @param animator  The animator to bind.
+     * @param name      The name of the animator.
+     * @param <T>       The type of the animator.
+     *
+     * @throws IllegalArgumentException if <code>animator</code> is annotated {@link NotBindable}.
+     * @see NotBindable
+     */
+    public <T extends Animator> void bind(@NonNull T animator, @NonNull String name) {
+        if (animator.getClass().getAnnotation(NotBindable.class) != null) {
+            throw new IllegalArgumentException("bind cannot be used with @NotBindable class " + animator.getClass());
+        }
+
+        animator.addListener(new BindAnimatorListener(name, this));
+    }
+
     //endregion
-
-
-    //region Listener
-
-    @Override
-    public void onAnimationStart(Animator animation) {
-        beginAnimation();
-    }
-
-    @Override
-    public void onAnimationEnd(Animator animation) {
-        endAnimation();
-        animation.removeListener(this);
-    }
-
-    @Override
-    public void onAnimationCancel(Animator animation) {
-        // Don't care
-    }
-
-    @Override
-    public void onAnimationRepeat(Animator animation) {
-        // Don't care
-    }
-
-
     //endregion
 
 
@@ -219,17 +218,19 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
+     * @return The animator that will execute the transaction. You must not call {@link Animator#start()}.
+     *
      * @see TransactionOptions  For possible options.
      * @see Transaction         For more information on working with a transaction.
      */
-    public void transaction(final @Nullable AnimatorTemplate template,
-                            final @TransactionOptions int options,
-                            final @NonNull TransactionConsumer consumer,
-                            final @Nullable OnAnimationCompleted onCompleted) {
-        Transaction transaction = new Transaction(this, template);
+    public @NonNull Animator transaction(final @Nullable AnimatorTemplate template,
+                                         final @TransactionOptions int options,
+                                         final @NonNull TransactionConsumer consumer,
+                                         final @Nullable OnAnimationCompleted onCompleted) {
+        final Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
 
-        Animator animator = transaction.toAnimator();
+        final Animator animator = transaction.toAnimator();
         if (onCompleted != null) {
             animator.addListener(new OnAnimationCompleted.Adapter(onCompleted));
         }
@@ -238,6 +239,8 @@ public class AnimatorContext implements Animator.AnimatorListener {
         } else {
             animator.start();
         }
+
+        return animator;
     }
 
     /**
@@ -246,11 +249,13 @@ public class AnimatorContext implements Animator.AnimatorListener {
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
+     * @return The animator that will execute the transaction. You must not call {@link Animator#start()}.
+     *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
-    public void transaction(@NonNull TransactionConsumer consumer,
-                            @Nullable OnAnimationCompleted onCompleted) {
-        transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+    public @NonNull Animator transaction(@NonNull TransactionConsumer consumer,
+                                         @Nullable OnAnimationCompleted onCompleted) {
+        return transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
     }
 
     //endregion
@@ -328,15 +333,16 @@ public class AnimatorContext implements Animator.AnimatorListener {
          * making modifications to it after the transaction
          * consumer returns is undefined.
          *
-         * @param <T> The type of the animator.
          * @param animator The animator to take ownership of.
+         * @param name The name of the animator.
+         * @param <T> The type of the animator.
          * @return The passed in animator.
          *
          * @see #animatorFor(View) if you need a {@link MultiAnimator}.
          */
-        public <T extends Animator> T takeOwnership(@NonNull T animator) {
+        public <T extends Animator> T takeOwnership(@NonNull T animator, @NonNull String name) {
             pending.add(animator);
-            animator.addListener(animatorContext);
+            animatorContext.bind(animator, name);
             return animator;
         }
 
@@ -413,4 +419,38 @@ public class AnimatorContext implements Animator.AnimatorListener {
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface TransactionOptions {}
+
+
+    private static class BindAnimatorListener extends AnimatorListenerAdapter {
+        final String name;
+        final WeakReference<AnimatorContext> animatorContext;
+
+        /**
+         * Constructs an animator listener that will bind an Animator's
+         * begin/end animation events to a given animator context.
+         * @param name The name of the animator.
+         * @param animatorContext <code>weak</code>. The animator context to bind with.
+         */
+        BindAnimatorListener(@NonNull String name,
+                                    @NonNull AnimatorContext animatorContext) {
+            this.name = name;
+            this.animatorContext = new WeakReference<>(animatorContext);
+        }
+
+        @Override
+        public void onAnimationStart(Animator animation) {
+            final AnimatorContext animatorContext = this.animatorContext.get();
+            if (animatorContext != null) {
+                animatorContext.beginAnimation(name);
+            }
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            final AnimatorContext animatorContext = this.animatorContext.get();
+            if (animatorContext != null) {
+                animatorContext.endAnimation(name);
+            }
+        }
+    }
 }

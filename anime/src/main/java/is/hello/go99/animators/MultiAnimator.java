@@ -39,6 +39,7 @@ import is.hello.go99.ViewVisibility;
  * A wrapper around {@link ViewPropertyAnimator} that descends from {@link Animator}
  * to allow for generic treatment of all animations within an {@link AnimatorContext}.
  */
+@NotBindable
 public class MultiAnimator extends Animator implements Animator.AnimatorListener {
     private final View target;
     private final @Nullable AnimatorContext animatorContext;
@@ -198,7 +199,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         }
 
         if (animatorContext != null) {
-            animatorContext.endAnimation();
+            animatorContext.endAnimation(toString());
         }
 
         Anime.removeAnimatingView(target);
@@ -273,7 +274,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         propertyAnimator.setListener(this);
 
         if (animatorContext != null) {
-            animatorContext.beginAnimation();
+            animatorContext.beginAnimation(toString());
         }
     }
 
@@ -424,6 +425,18 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //endregion
 
+
+    @Override
+    public String toString() {
+        return "MultiAnimator{" +
+                "target=" + target +
+                ", animatorContext=" + animatorContext +
+                ", properties=" + properties.keySet() +
+                ", interpolator=" + interpolator +
+                ", startDelay=" + startDelay +
+                ", duration=" + duration +
+                '}';
+    }
 
     private enum Property {
         X,

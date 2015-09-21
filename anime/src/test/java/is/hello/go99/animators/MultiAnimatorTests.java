@@ -15,6 +15,7 @@ import is.hello.go99.Go99TestCase;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 public class MultiAnimatorTests extends Go99TestCase {
@@ -82,5 +83,14 @@ public class MultiAnimatorTests extends Go99TestCase {
             });
         }
         animator.onAnimationEnd(animator);
+    }
+
+    @Test
+    public void toStringDoesNotInfiniteLoop() {
+        assertThat(animator.toString(), is(notNullValue()));
+
+        final AnimatorContext testAnimatorContext = new AnimatorContext("Test");
+        final MultiAnimator withAnimatorContext = MultiAnimator.animatorFor(fakeView, testAnimatorContext);
+        assertThat(withAnimatorContext, is(notNullValue()));
     }
 }
