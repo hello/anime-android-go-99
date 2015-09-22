@@ -2,6 +2,8 @@ package is.hello.go99.animators;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.TimeInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
 import org.junit.Before;
@@ -11,6 +13,7 @@ import org.robolectric.Robolectric;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import is.hello.go99.Anime;
 import is.hello.go99.Go99TestCase;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -25,6 +28,18 @@ public class MultiAnimatorTests extends Go99TestCase {
     @Before
     public void setUp() {
         this.animator = MultiAnimator.animatorFor(fakeView);
+    }
+
+    @Test
+    public void animatorForWithAnimatorContext() {
+        final AnimatorContext testContext = new AnimatorContext("Test");
+        final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                               new LinearInterpolator());
+        testContext.setTransactionTemplate(template);
+
+        final MultiAnimator animator = MultiAnimator.animatorFor(fakeView, testContext);
+        assertThat(animator.getDuration(), is(equalTo(template.duration)));
+        assertThat(animator.getInterpolator(), is(equalTo((TimeInterpolator) template.interpolator)));
     }
 
     @Test

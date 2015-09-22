@@ -122,10 +122,10 @@ public class AnimatorContextTests extends Go99TestCase {
         @Test
         public void toAnimatorSingle() throws Exception {
             final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
-                                                             new AccelerateDecelerateInterpolator());
+                                                                   new AccelerateDecelerateInterpolator());
 
             final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
-                                                                                 template);
+                                                                                       template);
             final AnimatorSet testAnimator = new AnimatorSet();
             single.takeOwnership(testAnimator, "Test animation");
 
@@ -140,10 +140,10 @@ public class AnimatorContextTests extends Go99TestCase {
         @Test
         public void toAnimatorMultiple() throws Exception {
             final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
-                                                             new AccelerateDecelerateInterpolator());
+                                                                   new AccelerateDecelerateInterpolator());
 
             final AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
-                                                                                   template);
+                                                                                         template);
 
             final AnimatorSet testAnimator1 = new AnimatorSet();
             final AnimatorSet testAnimator2 = new AnimatorSet();
