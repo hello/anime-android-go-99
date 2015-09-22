@@ -106,7 +106,7 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
             amplitudeView.setOnClickListener(this);
         }
 
-        public float getAmplitude() {
+        public float getTargetAmplitude() {
             return amplitude;
         }
 

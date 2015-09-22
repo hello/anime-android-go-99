@@ -36,12 +36,13 @@ import static is.hello.go99.animators.MultiAnimator.animatorFor;
 public class AmplitudesFragment extends Fragment
         implements AnimatorContext.Scene, SwipeRefreshLayout.OnRefreshListener,
         AmplitudeSource.Consumer, AmplitudeAdapter.OnClickListener, InfoTooltipView.OnDismissListener {
-    private static final long DELAY_STEP = 10;
     private static final float TARGET_DIMMED_ALPHA = 0.25f;
 
     private static final String SAVED_SOURCE_STATE = AmplitudesFragment.class.getName() + "#SAVED_SOURCE_STATE";
 
-    private final AnimatorContext animatorContext = new AnimatorContext(getClass().getSimpleName());
+    private AnimatorContext animatorContext;
+    private boolean enableLongAnimations = false;
+    private long cascadeDelayStep = 10L;
 
     private AmplitudeSource amplitudeSource;
 
@@ -63,6 +64,9 @@ public class AmplitudesFragment extends Fragment
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        this.animatorContext = new AnimatorContext(getClass().getSimpleName());
+        animatorContext.setTransactionTemplate(new AnimatorTemplate(new FastOutSlowInInterpolator()));
 
         this.amplitudeSource = new RandomAmplitudeSource();
         if (savedInstanceState != null) {
@@ -151,7 +155,7 @@ public class AmplitudesFragment extends Fragment
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
-        longAnimationsItem.setChecked(itemAnimator.useLongDuration());
+        longAnimationsItem.setChecked(enableLongAnimations);
         clearItem.setEnabled(adapter.getItemCount() > 0 && !swipeRefreshLayout.isRefreshing());
     }
 
@@ -159,8 +163,8 @@ public class AmplitudesFragment extends Fragment
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_long_animations: {
-                final boolean newValue = !itemAnimator.useLongDuration();
-                itemAnimator.setUseLongDuration(newValue);
+                final boolean newValue = !enableLongAnimations;
+                setEnableLongAnimations(newValue);
                 item.setChecked(newValue);
                 return true;
             }
@@ -244,13 +248,28 @@ public class AmplitudesFragment extends Fragment
 
     //region Animations
 
+    public void setEnableLongAnimations(boolean enableLongAnimations) {
+        if (enableLongAnimations != this.enableLongAnimations) {
+            final AnimatorTemplate oldTemplate = animatorContext.getTransactionTemplate();
+            final AnimatorTemplate newTemplate;
+            if (enableLongAnimations) {
+                newTemplate = oldTemplate.withDuration(oldTemplate.duration * 2L);
+                itemAnimator.setDelayStep(itemAnimator.getDelayStep() * 2L);
+                this.cascadeDelayStep *= 2L;
+            } else {
+                newTemplate = oldTemplate.withDuration(oldTemplate.duration / 2L);
+                itemAnimator.setDelayStep(itemAnimator.getDelayStep() / 2L);
+                this.cascadeDelayStep /= 2L;
+            }
+            animatorContext.setTransactionTemplate(newTemplate);
+
+            this.enableLongAnimations = enableLongAnimations;
+        }
+    }
+
     private void hideInitialCallToAction() {
-        final long duration = itemAnimator.useLongDuration()
-                ? Anime.DURATION_NORMAL * 2L
-                : Anime.DURATION_NORMAL;
         animatorFor(generateData, getAnimatorContext())
                 .withInterpolator(new AnticipateOvershootInterpolator())
-                .withDuration(duration)
                 .alpha(0f)
                 .scale(0f)
                 .addOnAnimationCompleted(new OnAnimationCompleted() {
@@ -268,12 +287,8 @@ public class AmplitudesFragment extends Fragment
     }
 
     private void showGenerateData() {
-        final long duration = itemAnimator.useLongDuration()
-                ? Anime.DURATION_NORMAL * 2L
-                : Anime.DURATION_NORMAL;
         animatorFor(generateData, getAnimatorContext())
                 .withInterpolator(new AnticipateOvershootInterpolator())
-                .withDuration(duration)
                 .addOnAnimationWillStart(new Runnable() {
                     @Override
                     public void run() {
@@ -311,7 +326,7 @@ public class AmplitudesFragment extends Fragment
                                .withStartDelay(delay)
                                .alpha(TARGET_DIMMED_ALPHA);
 
-                    delay += DELAY_STEP;
+                    delay += cascadeDelayStep;
                 }
 
                 transaction.animatorFor(viewHolder.itemView)
@@ -322,7 +337,8 @@ public class AmplitudesFragment extends Fragment
                     transaction.animatorFor(recyclerView.getChildAt(i))
                                .withStartDelay(delay)
                                .alpha(TARGET_DIMMED_ALPHA);
-                    delay += DELAY_STEP;
+
+                    delay += cascadeDelayStep;
                 }
 
                 if (infoTooltipView != null) {
@@ -331,7 +347,7 @@ public class AmplitudesFragment extends Fragment
 
                 AmplitudesFragment.this.infoTooltipView = new InfoTooltipView(getActivity());
                 infoTooltipView.setText(getString(R.string.amplitude_tooltip_fmt,
-                                                  viewHolder.getAmplitude() * 100f));
+                                                  viewHolder.getTargetAmplitude() * 100f));
                 infoTooltipView.setAnimatorContext(getAnimatorContext());
                 infoTooltipView.showAboveView(root, viewHolder.itemView, AmplitudesFragment.this);
             }

@@ -99,7 +99,6 @@ public class InfoTooltipView extends FrameLayout {
         final int overlap = getResources().getDimensionPixelSize(R.dimen.view_info_tooltip_overlap);
         animatorFor(text, animatorContext)
                 .withInterpolator(new FastOutLinearInInterpolator())
-                .withDuration(Anime.DURATION_FAST)
                 .slideYAndFade(overlap, 0f, 0f, 1f)
                 .addOnAnimationCompleted(new OnAnimationCompleted() {
                     @Override
@@ -126,7 +125,6 @@ public class InfoTooltipView extends FrameLayout {
         } else {
             animatorFor(text, animatorContext)
                     .withInterpolator(new FastOutSlowInInterpolator())
-                    .withDuration(Anime.DURATION_FAST)
                     .fadeOut(INVISIBLE)
                     .addOnAnimationCompleted(new OnAnimationCompleted() {
                         @Override
