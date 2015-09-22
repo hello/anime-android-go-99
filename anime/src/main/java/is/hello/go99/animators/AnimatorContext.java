@@ -46,6 +46,7 @@ public class AnimatorContext {
     private final String name;
     private final List<Runnable> runOnIdle = new ArrayList<>();
 
+    private @NonNull AnimatorTemplate transactionTemplate = AnimatorTemplate.DEFAULT;
     private int activeAnimationCount = 0;
 
     private final Handler idleHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
@@ -203,6 +204,22 @@ public class AnimatorContext {
     //region Transactions
 
     /**
+     * Sets the animator template used for transactions.
+     * @param template  The template to use.
+     */
+    public void setTransactionTemplate(@NonNull AnimatorTemplate template) {
+        this.transactionTemplate = template;
+    }
+
+    /**
+     * Gets the animator template used by transactions unless overridden.
+     * @return  The transaction animator template.
+     */
+    public @NonNull AnimatorTemplate getTransactionTemplate() {
+        return transactionTemplate;
+    }
+
+    /**
      * Executes a series of animations within the animation context.
      * <pre>
      *     AnimatorContext context = ...;
@@ -212,13 +229,14 @@ public class AnimatorContext {
      *     });
      * </pre>
      *
-     * @param template      An optional template to apply to animators involved in the transaction.
+     * @param template      The template to apply to animators involved in the transaction; null for default.
      * @param options       The options to apply to the transaction.
      * @param consumer      A consumer that will add animators to the transaction.
      * @param onCompleted   An optional listener to invoke when the animators all complete.
      *
      * @return The animator that will execute the transaction. You must not call {@link Animator#start()}.
      *
+     * @see #setTransactionTemplate(AnimatorTemplate) To specify the default transaction template.
      * @see TransactionOptions  For possible options.
      * @see Transaction         For more information on working with a transaction.
      */
@@ -226,7 +244,10 @@ public class AnimatorContext {
                                          final @TransactionOptions int options,
                                          final @NonNull TransactionConsumer consumer,
                                          final @Nullable OnAnimationCompleted onCompleted) {
-        final Transaction transaction = new Transaction(this, template);
+        final AnimatorTemplate transactionTemplate = template != null
+                ? template
+                : this.transactionTemplate;
+        final Transaction transaction = new Transaction(this, transactionTemplate);
         consumer.consume(transaction);
 
         final Animator animator = transaction.toAnimator();
@@ -254,7 +275,7 @@ public class AnimatorContext {
      */
     public @NonNull Animator transaction(@NonNull TransactionConsumer consumer,
                                          @Nullable OnAnimationCompleted onCompleted) {
-        return transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
+        return transaction(transactionTemplate, OPTIONS_DEFAULT, consumer, onCompleted);
     }
 
     //endregion
@@ -283,7 +304,7 @@ public class AnimatorContext {
         /**
          * The template to apply to transaction animators, if non-null.
          */
-        public final @Nullable AnimatorTemplate template;
+        public final @NonNull AnimatorTemplate template;
 
         private final List<Animator> pending = new ArrayList<>(2);
 
@@ -298,7 +319,7 @@ public class AnimatorContext {
          * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
          */
         public Transaction(@NonNull AnimatorContext animatorContext,
-                           @Nullable AnimatorTemplate template) {
+                           @NonNull AnimatorTemplate template) {
             this.animatorContext = animatorContext;
             this.template = template;
         }
@@ -358,16 +379,12 @@ public class AnimatorContext {
         public Animator toAnimator() {
             if (pending.size() == 1) {
                 Animator single = pending.get(0);
-                if (template != null) {
-                    template.apply(single);
-                }
+                template.apply(single);
                 return single;
             } else {
                 AnimatorSet set = new AnimatorSet();
                 set.playTogether(pending);
-                if (template != null) {
-                    template.apply(set);
-                }
+                template.apply(set);
                 return set;
             }
         }
