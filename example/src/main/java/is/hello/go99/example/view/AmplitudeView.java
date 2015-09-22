@@ -19,7 +19,6 @@ import java.util.Arrays;
 
 import is.hello.go99.Anime;
 import is.hello.go99.animators.AnimatorContext;
-import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.example.R;
 
 public class AmplitudeView extends View {
@@ -115,7 +114,6 @@ public class AmplitudeView extends View {
 
     public void animateToAmplitude(final float newAmplitude,
                                    long animationDelay,
-                                   @NonNull AnimatorTemplate animatorTemplate,
                                    @NonNull AnimatorContext.Transaction transaction) {
         if (changeAnimator != null) {
             changeAnimator.cancel();
@@ -123,7 +121,7 @@ public class AmplitudeView extends View {
 
         final @ColorInt float oldAmplitude = this.amplitude;
         final @ColorInt int[] colors = this.colors.getAnimatorColors(oldAmplitude, newAmplitude);
-        this.changeAnimator = animatorTemplate.createColorAnimator(colors);
+        this.changeAnimator = transaction.template.createColorAnimator(colors);
         changeAnimator.setStartDelay(animationDelay);
         changeAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
