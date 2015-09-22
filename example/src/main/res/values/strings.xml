@@ -6,4 +6,5 @@
     <string name="action_generate_data">Generate Data</string>
     <string name="action_clear">Clear</string>
     <string name="action_long_animations">Long Animations</string>
+    <string name="amplitude_tooltip_fmt">Amplitude is %1$.0f%%</string>
 </resources>
