@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnticipateOvershootInterpolator;
 import android.widget.Button;
+import android.widget.FrameLayout;
 
 import is.hello.go99.Anime;
 import is.hello.go99.animators.AnimatorContext;
@@ -28,13 +29,13 @@ import is.hello.go99.example.data.AmplitudeSource;
 import is.hello.go99.example.data.RandomAmplitudeSource;
 import is.hello.go99.example.recycler.AmplitudeAdapter;
 import is.hello.go99.example.recycler.AmplitudeItemAnimator;
-import is.hello.go99.example.view.InfoTooltipPopup;
+import is.hello.go99.example.view.InfoTooltipView;
 
 import static is.hello.go99.animators.MultiAnimator.animatorFor;
 
 public class AmplitudesFragment extends Fragment
         implements AnimatorContext.Scene, SwipeRefreshLayout.OnRefreshListener,
-        AmplitudeSource.Consumer, AmplitudeAdapter.OnClickListener {
+        AmplitudeSource.Consumer, AmplitudeAdapter.OnClickListener, InfoTooltipView.OnDismissListener {
     private static final long DELAY_STEP = 10;
     private static final float TARGET_DIMMED_ALPHA = 0.25f;
 
@@ -44,6 +45,7 @@ public class AmplitudesFragment extends Fragment
 
     private AmplitudeSource amplitudeSource;
 
+    private FrameLayout root;
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerView;
     private AmplitudeAdapter adapter;
@@ -52,7 +54,7 @@ public class AmplitudesFragment extends Fragment
     private MenuItem longAnimationsItem;
     private MenuItem clearItem;
 
-    private @Nullable InfoTooltipPopup infoTooltipPopup;
+    private @Nullable InfoTooltipView infoTooltipView;
     private AmplitudeItemAnimator itemAnimator;
 
 
@@ -78,6 +80,8 @@ public class AmplitudesFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_amplitudes, container, false);
 
+        this.root = (FrameLayout) view.findViewById(R.id.fragment_amplitudes_root);
+
         this.swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.fragment_amplitudes_swipe_refresh);
         swipeRefreshLayout.setOnRefreshListener(this);
         swipeRefreshLayout.setColorSchemeResources(R.color.accent, R.color.primary_dark,
@@ -86,6 +90,7 @@ public class AmplitudesFragment extends Fragment
         this.recyclerView = (RecyclerView) view.findViewById(R.id.fragment_amplitudes_recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.setHasFixedSize(true);
+        recyclerView.addOnScrollListener(new InfoTooltipDismissScrollListener());
 
         this.itemAnimator = new AmplitudeItemAnimator(getAnimatorContext());
         recyclerView.setItemAnimator(itemAnimator);
@@ -123,6 +128,7 @@ public class AmplitudesFragment extends Fragment
         super.onDestroyView();
 
         amplitudeSource.removeConsumer(this);
+        recyclerView.clearOnScrollListeners();
 
         this.swipeRefreshLayout = null;
         this.recyclerView = null;
@@ -284,10 +290,10 @@ public class AmplitudesFragment extends Fragment
 
     @Override
     public void onItemClicked(@NonNull AmplitudeAdapter.ViewHolder viewHolder) {
-        cascadeFadeOutFromCenterItem(viewHolder);
+        cascadeDimAmplitudesFromCenterItem(viewHolder);
     }
 
-    private void cascadeFadeOutFromCenterItem(@NonNull final AmplitudeAdapter.ViewHolder viewHolder) {
+    private void cascadeDimAmplitudesFromCenterItem(@NonNull final AmplitudeAdapter.ViewHolder viewHolder) {
         final int childIndex = recyclerView.indexOfChild(viewHolder.itemView);
         if (childIndex == -1) {
             Log.w(getClass().getSimpleName(), "Child view is missing?!");
@@ -319,18 +325,15 @@ public class AmplitudesFragment extends Fragment
                     delay += DELAY_STEP;
                 }
 
-                if (infoTooltipPopup != null) {
-                    infoTooltipPopup.dismiss();
+                if (infoTooltipView != null) {
+                    infoTooltipView.dismiss(true);
                 }
 
-                AmplitudesFragment.this.infoTooltipPopup = new InfoTooltipPopup(getActivity(), new Runnable() {
-                    @Override
-                    public void run() {
-                        cascadeFadeIn();
-                    }
-                });
-                infoTooltipPopup.setText("Hello, world");
-                infoTooltipPopup.show(viewHolder.itemView);
+                AmplitudesFragment.this.infoTooltipView = new InfoTooltipView(getActivity());
+                infoTooltipView.setText(getString(R.string.amplitude_tooltip_fmt,
+                                                  viewHolder.getAmplitude() * 100f));
+                infoTooltipView.setAnimatorContext(getAnimatorContext());
+                infoTooltipView.showAboveView(root, viewHolder.itemView, AmplitudesFragment.this);
             }
         }, new OnAnimationCompleted() {
             @Override
@@ -339,7 +342,7 @@ public class AmplitudesFragment extends Fragment
         });
     }
 
-    private void cascadeFadeIn() {
+    private void undimAmplitudes() {
         final AnimatorTemplate animatorTemplate = new AnimatorTemplate(Anime.DURATION_FAST,
                                                                        new FastOutSlowInInterpolator());
         getAnimatorContext().transaction(animatorTemplate, AnimatorContext.OPTIONS_DEFAULT, new AnimatorContext.TransactionConsumer() {
@@ -355,6 +358,26 @@ public class AmplitudesFragment extends Fragment
             public void onAnimationCompleted(boolean finished) {
             }
         });
+    }
+
+    @Override
+    public void onInfoTooltipDismissed() {
+        undimAmplitudes();
+        this.infoTooltipView = null;
+    }
+
+    private class InfoTooltipDismissScrollListener extends RecyclerView.OnScrollListener {
+        @Override
+        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            if (infoTooltipView != null) {
+                infoTooltipView.dismiss(true);
+                AmplitudesFragment.this.infoTooltipView = null;
+
+                for (int i = 0, count = recyclerView.getChildCount(); i < count; i++) {
+                    recyclerView.getChildAt(i).setAlpha(1f);
+                }
+            }
+        }
     }
 
     //endregion
