@@ -7,6 +7,7 @@ import android.widget.FrameLayout;
 import org.junit.Before;
 import org.junit.Test;
 import org.robolectric.Robolectric;
+import org.robolectric.util.Scheduler;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,6 +18,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class MultiAnimatorTests extends Go99TestCase {
     private final FrameLayout fakeView = new FrameLayout(getContext());
@@ -55,6 +60,58 @@ public class MultiAnimatorTests extends Go99TestCase {
         animator.start();
 
         assertThat(onAnimationCompletedCalled.get(), is(false));
+    }
+
+    @Test
+    public void overlappingAnimationsWithContext() {
+        final Scheduler scheduler = Robolectric.getForegroundThreadScheduler();
+        scheduler.pause();
+
+        final AnimatorContext context = spy(new AnimatorContext("Test"));
+
+        final MultiAnimator animator1 = MultiAnimator.animatorFor(fakeView, context);
+        final AtomicBoolean animator1Canceled = new AtomicBoolean(false);
+        final AtomicBoolean animator1Ended = new AtomicBoolean(false);
+        final AtomicBoolean animator1Started = new AtomicBoolean(false);
+        animator1.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                animator1Canceled.set(true);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                animator1Ended.set(true);
+            }
+
+            @Override
+            public void onAnimationStart(Animator animation) {
+                animator1Started.set(true);
+            }
+        });
+        animator1.x(10f);
+        animator1.start();
+
+        verify(context, times(1)).beginAnimation(any(String.class));
+        fakeView.animate().start();
+        assertThat(animator1Canceled.get(), is(false));
+        assertThat(animator1Ended.get(), is(false));
+        assertThat(animator1Started.get(), is(true));
+
+        MultiAnimator.animatorFor(fakeView, context)
+                     .x(0f)
+                     .start();
+
+        fakeView.animate().start();
+        assertThat(animator1Canceled.get(), is(true));
+        assertThat(animator1Ended.get(), is(true));
+
+        verify(context, times(1)).endAnimation(any(String.class));
+        verify(context, times(2)).beginAnimation(any(String.class));
+
+        scheduler.unPause();
+
+        verify(context, times(2)).endAnimation(any(String.class));
     }
 
     @Test
