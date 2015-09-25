@@ -39,6 +39,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -156,6 +157,65 @@ public class AnimatorContextTests extends Go99TestCase {
                        is(equalTo(template.duration)));
             assertThat(animator2.getInterpolator(),
                        is(equalTo((TimeInterpolator) template.interpolator)));
+        }
+
+        @Test
+        public void toAnimatorResultConsistency() {
+            final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                                   new AccelerateDecelerateInterpolator());
+
+
+            final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
+                                                                                       template);
+            final AnimatorSet testAnimator = new AnimatorSet();
+            single.takeOwnership(testAnimator, "Test animation");
+
+            assertThat(single.toAnimator(), is(sameInstance(single.toAnimator())));
+
+
+            final AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
+                                                                                         template);
+
+            final AnimatorSet testAnimator1 = new AnimatorSet();
+            multiple.takeOwnership(testAnimator1, "Test animation 1");
+            final AnimatorSet testAnimator2 = new AnimatorSet();
+            multiple.takeOwnership(testAnimator2, "Test animation 2");
+
+            assertThat(multiple.toAnimator(), is(sameInstance(multiple.toAnimator())));
+        }
+
+        @Test
+        public void cancelBeforeStart() {
+            final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                                   new AccelerateDecelerateInterpolator());
+
+            final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
+                                                                                       template);
+            final AnimatorSet testAnimator = spy(new AnimatorSet());
+            single.takeOwnership(testAnimator, "Test animation");
+
+            single.cancel();
+            verify(testAnimator, never()).cancel();
+
+            single.start();
+            verify(testAnimator, never()).start();
+        }
+
+        @Test
+        public void cancelAfterStart() {
+            final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                                   new AccelerateDecelerateInterpolator());
+
+            final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
+                                                                                       template);
+            final AnimatorSet testAnimator = spy(new AnimatorSet());
+            single.takeOwnership(testAnimator, "Test animation");
+
+            single.start();
+            verify(testAnimator).start();
+
+            single.cancel();
+            verify(testAnimator).cancel();
         }
     }
 }

@@ -263,6 +263,8 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         }
 
         ViewPropertyAnimator propertyAnimator = target.animate();
+        propertyAnimator.cancel();
+        propertyAnimator.setListener(this);
         propertyAnimator.setDuration(duration);
         propertyAnimator.setStartDelay(startDelay);
         propertyAnimator.setInterpolator(interpolator);
@@ -296,11 +298,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
             }
         }
 
-        // Needs to happen after specifying the animations,
-        // otherwise if there's a running animation that will
-        // be canceled from calling an animator method, we'll
-        // get unwanted callbacks and bad things will happen.
-        propertyAnimator.setListener(this);
+        propertyAnimator.start();
 
         if (animatorContext != null) {
             animatorContext.beginAnimation(toString());
