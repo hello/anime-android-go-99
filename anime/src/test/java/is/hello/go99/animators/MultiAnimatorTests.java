@@ -12,6 +12,7 @@ import org.robolectric.util.Scheduler;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import is.hello.go99.Anime;
 import is.hello.go99.Go99TestCase;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -45,8 +46,6 @@ public class MultiAnimatorTests extends Go99TestCase {
                      })
                      .x(10f)
                      .start();
-
-        fakeView.animate().start();
 
         final AtomicBoolean onAnimationCompletedCalled = new AtomicBoolean();
         animator.addOnAnimationCompleted(new OnAnimationCompleted() {
@@ -93,7 +92,6 @@ public class MultiAnimatorTests extends Go99TestCase {
         animator1.start();
 
         verify(context, times(1)).beginAnimation(any(String.class));
-        fakeView.animate().start();
         assertThat(animator1Canceled.get(), is(false));
         assertThat(animator1Ended.get(), is(false));
         assertThat(animator1Started.get(), is(true));
@@ -102,7 +100,6 @@ public class MultiAnimatorTests extends Go99TestCase {
                      .x(0f)
                      .start();
 
-        fakeView.animate().start();
         assertThat(animator1Canceled.get(), is(true));
         assertThat(animator1Ended.get(), is(true));
 
@@ -140,6 +137,42 @@ public class MultiAnimatorTests extends Go99TestCase {
             });
         }
         animator.onAnimationEnd(animator);
+    }
+
+    @Test
+    public void cancelBeforeNextLooperCycle() {
+        final Scheduler scheduler = Robolectric.getForegroundThreadScheduler();
+        scheduler.pause();
+
+        final AnimatorContext testContext = spy(new AnimatorContext("Test"));
+
+        final MultiAnimator animator = MultiAnimator.animatorFor(fakeView, testContext);
+        animator.translationY(0f);
+        animator.start();
+
+        verify(testContext).beginAnimation(any(String.class));
+
+        animator.cancel();
+
+        verify(testContext).endAnimation(any(String.class));
+    }
+
+    @Test
+    public void cancelFromAnimeBeforeNextLooperCycle() {
+        final Scheduler scheduler = Robolectric.getForegroundThreadScheduler();
+        scheduler.pause();
+
+        final AnimatorContext testContext = spy(new AnimatorContext("Test"));
+
+        final MultiAnimator animator = MultiAnimator.animatorFor(fakeView, testContext);
+        animator.translationY(0f);
+        animator.start();
+
+        verify(testContext).beginAnimation(any(String.class));
+
+        Anime.cancelAll(fakeView);
+
+        verify(testContext).endAnimation(any(String.class));
     }
 
     @Test
