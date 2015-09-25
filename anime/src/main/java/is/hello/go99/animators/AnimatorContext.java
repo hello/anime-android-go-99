@@ -223,10 +223,10 @@ public class AnimatorContext {
      * @see TransactionOptions  For possible options.
      * @see Transaction         For more information on working with a transaction.
      */
-    public @NonNull Animator transaction(final @Nullable AnimatorTemplate template,
-                                         final @TransactionOptions int options,
-                                         final @NonNull TransactionConsumer consumer,
-                                         final @Nullable OnAnimationCompleted onCompleted) {
+    public @NonNull Transaction transaction(final @Nullable AnimatorTemplate template,
+                                            final @TransactionOptions int options,
+                                            final @NonNull TransactionConsumer consumer,
+                                            final @Nullable OnAnimationCompleted onCompleted) {
         final Transaction transaction = new Transaction(this, template);
         consumer.consume(transaction);
 
@@ -240,7 +240,7 @@ public class AnimatorContext {
             animator.start();
         }
 
-        return animator;
+        return transaction;
     }
 
     /**
@@ -253,8 +253,8 @@ public class AnimatorContext {
      *
      * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
      */
-    public @NonNull Animator transaction(@NonNull TransactionConsumer consumer,
-                                         @Nullable OnAnimationCompleted onCompleted) {
+    public @NonNull Transaction transaction(@NonNull TransactionConsumer consumer,
+                                            @Nullable OnAnimationCompleted onCompleted) {
         return transaction(null, AnimatorContext.OPTIONS_DEFAULT, consumer, onCompleted);
     }
 
@@ -287,6 +287,8 @@ public class AnimatorContext {
         public final @Nullable AnimatorTemplate template;
 
         private final List<Animator> pending = new ArrayList<>(2);
+        private @Nullable Animator animator;
+        private boolean canceled = false;
 
         /**
          * Construct a transaction with an animator context and template.
@@ -357,20 +359,52 @@ public class AnimatorContext {
          * @return An animator owned by the transaction.
          */
         public Animator toAnimator() {
-            if (pending.size() == 1) {
-                Animator single = pending.get(0);
-                if (template != null) {
-                    template.apply(single);
+            if (animator == null) {
+                if (pending.size() == 1) {
+                    final Animator single = pending.get(0);
+                    if (template != null) {
+                        template.apply(single);
+                    }
+                    this.animator = single;
+                } else {
+                    final AnimatorSet set = new AnimatorSet();
+                    set.playTogether(pending);
+                    if (template != null) {
+                        template.apply(set);
+                    }
+                    this.animator = set;
                 }
-                return single;
-            } else {
-                AnimatorSet set = new AnimatorSet();
-                set.playTogether(pending);
-                if (template != null) {
-                    template.apply(set);
-                }
-                return set;
             }
+            return animator;
+        }
+
+        /**
+         * Immediately start the animations in the transaction
+         * if the transaction hasn't been canceled.
+         */
+        public void start() {
+            if (!canceled) {
+                toAnimator().start();
+            }
+        }
+
+        /**
+         * Immediately terminates any running animators in the transaction,
+         * and makes all future calls to {@link #start()} no-ops.
+         */
+        public void cancel() {
+            this.canceled = true;
+            if (animator != null) {
+                animator.cancel();
+            }
+        }
+
+        /**
+         * Whether or not the transaction is currently running.
+         * @return  true if the transaction is running; false otherwise.
+         */
+        public boolean isRunning() {
+            return (animator != null && animator.isRunning());
         }
     }
 
@@ -432,7 +466,7 @@ public class AnimatorContext {
          * @param animatorContext <code>weak</code>. The animator context to bind with.
          */
         BindAnimatorListener(@NonNull String name,
-                                    @NonNull AnimatorContext animatorContext) {
+                             @NonNull AnimatorContext animatorContext) {
             this.name = name;
             this.animatorContext = new WeakReference<>(animatorContext);
         }
