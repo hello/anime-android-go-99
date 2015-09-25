@@ -1,6 +1,5 @@
 package is.hello.go99.example.recycler;
 
-import android.animation.Animator;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
@@ -20,7 +19,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
     private final List<Change> pending = new ArrayList<>();
     private final List<Change> running = new ArrayList<>();
-    private @Nullable Animator currentTransaction;
+    private @Nullable AnimatorContext.Transaction currentTransaction;
 
 
     //region Lifecycle

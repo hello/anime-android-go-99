@@ -47,6 +47,7 @@ public class AnimatorContext {
     private final List<Runnable> runOnIdle = new ArrayList<>();
 
     private int activeAnimationCount = 0;
+    private @NonNull AnimatorTemplate transactionTemplate = AnimatorTemplate.DEFAULT;
 
     private final Handler idleHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
         @Override
@@ -198,10 +199,28 @@ public class AnimatorContext {
     }
 
     //endregion
-    //endregion
 
 
     //region Transactions
+
+    /**
+     * Provides the animator template applied to transactions that don't specify their own.
+     * @return  The template to apply.
+     */
+    public @NonNull AnimatorTemplate getTransactionTemplate() {
+        return transactionTemplate;
+    }
+
+    /**
+     * Specifies the animator template to apply to transactions that don't specify their own.
+     * <p>
+     * Also used by {@link MultiAnimator#animatorFor(View, AnimatorContext)}.
+     *
+     * @param transactionTemplate The template to apply.
+     */
+    public void setTransactionTemplate(@NonNull AnimatorTemplate transactionTemplate) {
+        this.transactionTemplate = transactionTemplate;
+    }
 
     /**
      * Executes a series of animations within the animation context.
@@ -227,7 +246,10 @@ public class AnimatorContext {
                                             final @TransactionOptions int options,
                                             final @NonNull TransactionConsumer consumer,
                                             final @Nullable OnAnimationCompleted onCompleted) {
-        final Transaction transaction = new Transaction(this, template);
+        final AnimatorTemplate transactionTemplate = template != null
+                ? template
+                : this.transactionTemplate;
+        final Transaction transaction = new Transaction(this, transactionTemplate);
         consumer.consume(transaction);
 
         final Animator animator = transaction.toAnimator();
