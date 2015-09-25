@@ -122,10 +122,10 @@ public class AnimatorContextTests extends Go99TestCase {
         @Test
         public void toAnimatorSingle() throws Exception {
             final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
-                                                             new AccelerateDecelerateInterpolator());
+                                                                   new AccelerateDecelerateInterpolator());
 
             final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
-                                                                                 template);
+                                                                                       template);
             final AnimatorSet testAnimator = new AnimatorSet();
             single.takeOwnership(testAnimator, "Test animation");
 
@@ -140,10 +140,10 @@ public class AnimatorContextTests extends Go99TestCase {
         @Test
         public void toAnimatorMultiple() throws Exception {
             final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
-                                                             new AccelerateDecelerateInterpolator());
+                                                                   new AccelerateDecelerateInterpolator());
 
             final AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
-                                                                                   template);
+                                                                                         template);
 
             final AnimatorSet testAnimator1 = new AnimatorSet();
             final AnimatorSet testAnimator2 = new AnimatorSet();
@@ -156,6 +156,31 @@ public class AnimatorContextTests extends Go99TestCase {
                        is(equalTo(template.duration)));
             assertThat(animator2.getInterpolator(),
                        is(equalTo((TimeInterpolator) template.interpolator)));
+        }
+
+        @Test
+        public void toAnimatorResultConsistency() {
+            final AnimatorTemplate template = new AnimatorTemplate(Anime.DURATION_SLOW,
+                                                                   new AccelerateDecelerateInterpolator());
+
+
+            final AnimatorContext.Transaction single = new AnimatorContext.Transaction(animatorContext,
+                                                                                       template);
+            final AnimatorSet testAnimator = new AnimatorSet();
+            single.takeOwnership(testAnimator, "Test animation");
+
+            assertThat(single.toAnimator(), is(sameInstance(single.toAnimator())));
+
+
+            final AnimatorContext.Transaction multiple = new AnimatorContext.Transaction(animatorContext,
+                                                                                         template);
+
+            final AnimatorSet testAnimator1 = new AnimatorSet();
+            multiple.takeOwnership(testAnimator1, "Test animation 1");
+            final AnimatorSet testAnimator2 = new AnimatorSet();
+            multiple.takeOwnership(testAnimator2, "Test animation 2");
+
+            assertThat(multiple.toAnimator(), is(sameInstance(multiple.toAnimator())));
         }
     }
 }

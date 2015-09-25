@@ -287,6 +287,7 @@ public class AnimatorContext {
         public final @Nullable AnimatorTemplate template;
 
         private final List<Animator> pending = new ArrayList<>(2);
+        private @Nullable Animator animator;
 
         /**
          * Construct a transaction with an animator context and template.
@@ -357,20 +358,23 @@ public class AnimatorContext {
          * @return An animator owned by the transaction.
          */
         public Animator toAnimator() {
-            if (pending.size() == 1) {
-                Animator single = pending.get(0);
-                if (template != null) {
-                    template.apply(single);
+            if (animator == null) {
+                if (pending.size() == 1) {
+                    final Animator single = pending.get(0);
+                    if (template != null) {
+                        template.apply(single);
+                    }
+                    this.animator = single;
+                } else {
+                    final AnimatorSet set = new AnimatorSet();
+                    set.playTogether(pending);
+                    if (template != null) {
+                        template.apply(set);
+                    }
+                    this.animator = set;
                 }
-                return single;
-            } else {
-                AnimatorSet set = new AnimatorSet();
-                set.playTogether(pending);
-                if (template != null) {
-                    template.apply(set);
-                }
-                return set;
             }
+            return animator;
         }
     }
 
