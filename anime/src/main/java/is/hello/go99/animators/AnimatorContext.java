@@ -398,6 +398,14 @@ public class AnimatorContext {
                 animator.cancel();
             }
         }
+
+        /**
+         * Whether or not the transaction is currently running.
+         * @return  true if the transaction is running; false otherwise.
+         */
+        public boolean isRunning() {
+            return (animator != null && animator.isRunning());
+        }
     }
 
 
