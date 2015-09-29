@@ -44,6 +44,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     private final View target;
     private final @Nullable AnimatorContext animatorContext;
     private final Map<Property, Float> properties = new HashMap<>();
+    private boolean hasFiredEndListener = false;
 
     private long duration = Anime.DURATION_NORMAL;
     private long startDelay = 0;
@@ -190,7 +191,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void onAnimationEnd(Animator animation) {
-        ArrayList<AnimatorListener> listeners = getListeners();
+        if (hasFiredEndListener) {
+            return;
+        }
+
+        final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
             final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
@@ -203,6 +208,8 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         }
 
         Anime.removeAnimatingView(target);
+
+        this.hasFiredEndListener = true;
     }
 
     @Override
@@ -229,20 +236,20 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     //region Running
 
     private void startInternal() {
-        for (Runnable willStart : willStartListeners) {
+        for (final Runnable willStart : willStartListeners) {
             willStart.run();
         }
 
-        ViewPropertyAnimator propertyAnimator = target.animate();
+        final ViewPropertyAnimator propertyAnimator = target.animate();
         propertyAnimator.cancel();
         propertyAnimator.setListener(this);
         propertyAnimator.setDuration(duration);
         propertyAnimator.setStartDelay(startDelay);
         propertyAnimator.setInterpolator(interpolator);
 
-        for (Map.Entry<Property, Float> entry : properties.entrySet()) {
-            Property property = entry.getKey();
-            float value = entry.getValue();
+        for (final Map.Entry<Property, Float> entry : properties.entrySet()) {
+            final Property property = entry.getKey();
+            final float value = entry.getValue();
             switch (property) {
                 case X:
                     propertyAnimator.x(value);
@@ -269,6 +276,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
             }
         }
 
+        this.hasFiredEndListener = false;
         propertyAnimator.start();
 
         if (animatorContext != null) {

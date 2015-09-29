@@ -181,6 +181,9 @@ public class AnimatorContext {
 
     /**
      * Binds the animator context to the begin/end animation events of a given animator.
+     * <p>
+     * <em>Important:</em> Bindings are one-shot. So if you plan on re-using a
+     * bound animator, you will need to bind it at the beginning of each use.
      *
      * @param animator  The animator to bind.
      * @param name      The name of the animator.
@@ -456,8 +459,9 @@ public class AnimatorContext {
 
 
     private static class BindAnimatorListener extends AnimatorListenerAdapter {
-        final String name;
-        final WeakReference<AnimatorContext> animatorContext;
+        private final String name;
+        private final WeakReference<AnimatorContext> animatorContext;
+        private boolean hasEnded = false;
 
         /**
          * Constructs an animator listener that will bind an Animator's
@@ -473,6 +477,10 @@ public class AnimatorContext {
 
         @Override
         public void onAnimationStart(Animator animation) {
+            if (hasEnded) {
+                return;
+            }
+
             final AnimatorContext animatorContext = this.animatorContext.get();
             if (animatorContext != null) {
                 animatorContext.beginAnimation(name);
@@ -481,10 +489,17 @@ public class AnimatorContext {
 
         @Override
         public void onAnimationEnd(Animator animation) {
+            if (hasEnded) {
+                return;
+            }
+
             final AnimatorContext animatorContext = this.animatorContext.get();
             if (animatorContext != null) {
                 animatorContext.endAnimation(name);
             }
+
+            this.hasEnded = true;
+            animation.removeListener(this);
         }
     }
 }
