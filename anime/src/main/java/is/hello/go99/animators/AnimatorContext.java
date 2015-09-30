@@ -477,10 +477,6 @@ public class AnimatorContext {
 
         @Override
         public void onAnimationStart(Animator animation) {
-            if (hasEnded) {
-                return;
-            }
-
             final AnimatorContext animatorContext = this.animatorContext.get();
             if (animatorContext != null) {
                 animatorContext.beginAnimation(name);
