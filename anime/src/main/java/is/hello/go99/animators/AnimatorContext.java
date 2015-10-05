@@ -52,10 +52,13 @@ public class AnimatorContext {
         @Override
         public boolean handleMessage(Message message) {
             if (message.what == MSG_IDLE) {
-                for (Runnable task : runOnIdle) {
+                // Guards against AnimatorContextTests#runOnIdleConcurrentModification()
+                final ArrayList<Runnable> runOnIdleCopy = new ArrayList<>(runOnIdle);
+                runOnIdle.clear();
+
+                for (final Runnable task : runOnIdleCopy) {
                     task.run();
                 }
-                runOnIdle.clear();
 
                 return true;
             }

@@ -97,6 +97,28 @@ public class AnimatorContextTests extends Go99TestCase {
     }
 
     @Test
+    public void runOnIdleConcurrentModification() {
+        final AtomicBoolean reached = new AtomicBoolean(false);
+        animatorContext.beginAnimation("Test animation");
+        animatorContext.runWhenIdle(new Runnable() {
+            @Override
+            public void run() {
+                animatorContext.beginAnimation("Nested test animation");
+                animatorContext.runWhenIdle(new Runnable() {
+                    @Override
+                    public void run() {
+                        reached.set(true);
+                    }
+                });
+                animatorContext.endAnimation("Nested test animation");
+            }
+        });
+        animatorContext.endAnimation("Test animation");
+
+        assertThat(reached.get(), is(true));
+    }
+
+    @Test
     public void bind() throws Exception {
         final AnimatorContext animatorContext = spy(this.animatorContext);
         final AnimatorSet fake = spy(new AnimatorSet());
