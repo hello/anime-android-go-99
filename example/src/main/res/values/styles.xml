@@ -1,0 +1,35 @@
+<resources>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="android:windowBackground">@color/amplitude_background</item>
+
+        <item name="dialogTheme">@style/AppTheme.Dialog</item>
+
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+
+        <item name="colorControlNormal">@color/accent</item>
+        <item name="colorControlActivated">@color/accent_dark</item>
+        <item name="colorControlHighlight">@color/accent_dark</item>
+
+        <item name="colorButtonNormal">@color/primary</item>
+        <item name="android:textAppearanceButton">@style/TextAppearance.AppCompat.Widget.Button.Inverse</item>
+    </style>
+
+    <style name="AppTheme.Dialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+
+        <item name="colorControlNormal">@color/accent</item>
+        <item name="colorControlActivated">@color/accent_dark</item>
+        <item name="colorControlHighlight">@color/accent_dark</item>
+    </style>
+
+    <style name="AppTheme.TooltipAnimation" parent="android:Animation">
+        <item name="android:windowEnterAnimation">@anim/anime_fade_in</item>
+        <item name="android:windowExitAnimation">@anim/anime_fade_out</item>
+    </style>
+
+</resources>

@@ -56,10 +56,35 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Lifecycle
 
+    /**
+     * Creates a multi-animator for a given view, unbound to any animator context.
+     * <p>
+     * <em>Important:</em> <code>MultiAnimator</code> does not cache view animators,
+     * every call to <code>#animatorFor(View)</code> returns a new object. Additionally,
+     * attempting to run multiple multi-animators for a single view at the same time will
+     * result in undefined behavior.
+     *
+     * @param view  The view to create an animator for.
+     * @return  A new multi-animator object.
+     */
     public static MultiAnimator animatorFor(@NonNull View view) {
         return new MultiAnimator(view, null);
     }
 
+    /**
+     * Creates a multi-animator for a given view, and binds it to a given animator context.
+     * <p>
+     * The transaction template of the animator context will be applied to the multi-animator.
+     * <p>
+     * <em>Important:</em> <code>MultiAnimator</code> does not cache view animators,
+     * every call to <code>#animatorFor(View)</code> returns a new object. Additionally,
+     * attempting to run multiple multi-animators for a single view at the same time will
+     * result in undefined behavior.
+     *
+     * @param view  The view to create an animator for.
+     * @param animatorContext The animator context to bind to.
+     * @return  A new multi-animator object.
+     */
     public static MultiAnimator animatorFor(@NonNull View view,
                                             @Nullable AnimatorContext animatorContext) {
         return new MultiAnimator(view, animatorContext);
@@ -69,6 +94,10 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                           @Nullable AnimatorContext animatorContext) {
         this.target = target;
         this.animatorContext = animatorContext;
+
+        if (animatorContext != null) {
+            animatorContext.getTransactionTemplate().apply(this);
+        }
     }
 
     //endregion
