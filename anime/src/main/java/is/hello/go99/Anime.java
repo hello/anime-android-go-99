@@ -28,21 +28,21 @@ public class Anime {
      * For animations that will be run in the middle of a user interaction
      * where just snapping an element off the screen would look bad.
      * <p>
-     * Also available as <code>@integer/anime_duration_very_fast</code>.
+     * Also available as {@code @integer/anime_duration_very_fast}.
      */
     public static final int DURATION_VERY_FAST = 50;
 
     /**
      * The fastest speed used for a regular animation.
      * <p>
-     * Also available as <code>@integer/anime_duration_fast</code>.
+     * Also available as {@code @integer/anime_duration_fast}.
      */
     public static final int DURATION_FAST = 150;
 
     /**
      * The slowest speed used for a regular animation.
      * <p>
-     * Also available as <code>@integer/anime_duration_slow</code>.
+     * Also available as {@code @integer/anime_duration_slow}.
      */
     public static final int DURATION_SLOW = 350;
 
@@ -50,12 +50,12 @@ public class Anime {
      * Typical duration for animations in the Sense app. The
      * original duration constant used by iOS before version 7.
      * <p>
-     * Also available as <code>@integer/anime_duration_normal</code>.
+     * Also available as {@code @integer/anime_duration_normal}.
      */
     public static final int DURATION_NORMAL = 250;
 
     /**
-     * The default interpolator used by the <code>animation</code> package.
+     * The default interpolator used by the {@code animation} package.
      */
     public static final Interpolator INTERPOLATOR_DEFAULT = new DecelerateInterpolator();
 
@@ -92,7 +92,7 @@ public class Anime {
      * @param start The start value.
      * @param end The end value.
      * @return A linear interpolation between the start and end values, given the
-     *         <code>fraction</code> parameter.
+     *         {@code fraction} parameter.
      */
     public static float interpolateFloats(float fraction, float start, float end) {
         return start + fraction * (end - start);
@@ -106,7 +106,7 @@ public class Anime {
      * @param startColor The start color.
      * @param endColor The end color.
      * @return A linear interpolation between the start and end colors, given the
-     *         <code>fraction</code> parameter.
+     *         {@code fraction} parameter.
      */
     public static int interpolateColors(float fraction, int startColor, int endColor) {
         int startA = (startColor >> 24) & 0xff;

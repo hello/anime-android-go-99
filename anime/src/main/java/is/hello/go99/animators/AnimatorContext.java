@@ -192,7 +192,7 @@ public class AnimatorContext {
      * @param name      The name of the animator.
      * @param <T>       The type of the animator.
      *
-     * @throws IllegalArgumentException if <code>animator</code> is annotated {@link NotBindable}.
+     * @throws IllegalArgumentException if {@code animator} is annotated {@link NotBindable}.
      * @see NotBindable
      */
     public <T extends Animator> void bind(@NonNull T animator, @NonNull String name) {
@@ -470,7 +470,7 @@ public class AnimatorContext {
          * Constructs an animator listener that will bind an Animator's
          * begin/end animation events to a given animator context.
          * @param name The name of the animator.
-         * @param animatorContext <code>weak</code>. The animator context to bind with.
+         * @param animatorContext {@code weak}. The animator context to bind with.
          */
         BindAnimatorListener(@NonNull String name,
                              @NonNull AnimatorContext animatorContext) {
