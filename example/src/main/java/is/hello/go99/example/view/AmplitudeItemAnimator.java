@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package is.hello.go99.example.recycler;
+package is.hello.go99.example.view;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -29,7 +29,7 @@ import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.animators.MultiAnimator;
 import is.hello.go99.animators.OnAnimationCompleted;
 import is.hello.go99.example.AmplitudesFragment;
-import is.hello.go99.example.view.AmplitudeView;
+import is.hello.go99.example.adapter.AmplitudeAdapter;
 
 /**
  * Demonstrates coordinating a very large number of on-screen animations. This item animator
@@ -47,7 +47,7 @@ import is.hello.go99.example.view.AmplitudeView;
 public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
     private final AnimatorContext animatorContext;
 
-    private long delayStep = 20;
+    private boolean wantsLongDelayStep = false;
     private @Nullable Runnable runAfterNextAnimationComplete;
 
     private final List<Change> pending = new ArrayList<>();
@@ -70,20 +70,20 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
         setSupportsChangeAnimations(false);
     }
 
-    /**
-     * Returns the amount of delay between sequential animations in the animator.
-     */
-    public long getDelayStep() {
-        return delayStep;
+    public void setWantsLongDelayStep(boolean wantsLongDelayStep) {
+        this.wantsLongDelayStep = wantsLongDelayStep;
     }
 
-    /**
-     * Sets the amount of delay between sequential animations.
-     *
-     * @param delayStep The amount in milliseconds.
-     */
-    public void setDelayStep(long delayStep) {
-        this.delayStep = delayStep;
+    public boolean getWantsLongDelayStep() {
+        return wantsLongDelayStep;
+    }
+
+    public long getDelayStep() {
+        if (wantsLongDelayStep) {
+            return 40;
+        } else {
+            return 20;
+        }
     }
 
     //endregion
@@ -107,7 +107,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
                                              transaction);
                     running.add(change);
 
-                    delay += delayStep;
+                    delay += getDelayStep();
                 }
 
                 pending.clear();

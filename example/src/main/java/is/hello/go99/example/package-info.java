@@ -21,7 +21,7 @@
  *
  * @see is.hello.go99.example.view.AmplitudeView for the rendering code.
  * @see is.hello.go99.example.view.InfoTooltipView for a simple example of view animation.
- * @see is.hello.go99.example.recycler.AmplitudeItemAnimator for most of the animation code.
+ * @see is.hello.go99.example.view.AmplitudeItemAnimator for most of the animation code.
  * @see is.hello.go99.example.AmplitudesFragment for the glue code.
  */
 package is.hello.go99.example;

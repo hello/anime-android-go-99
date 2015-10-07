@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package is.hello.go99.example.recycler;
+package is.hello.go99.example.adapter;
 
 import android.content.res.Resources;
 import android.support.annotation.NonNull;
@@ -111,7 +111,7 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
 
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        final AmplitudeView amplitudeView;
+        public final AmplitudeView amplitudeView;
         float amplitude;
 
         ViewHolder(@NonNull AmplitudeView amplitudeView) {

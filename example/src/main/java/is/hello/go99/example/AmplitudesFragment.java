@@ -27,9 +27,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnticipateOvershootInterpolator;
@@ -40,10 +37,10 @@ import is.hello.go99.Anime;
 import is.hello.go99.animators.AnimatorContext;
 import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.animators.OnAnimationCompleted;
+import is.hello.go99.example.adapter.AmplitudeAdapter;
 import is.hello.go99.example.data.AmplitudeSource;
 import is.hello.go99.example.data.RandomAmplitudeSource;
-import is.hello.go99.example.recycler.AmplitudeAdapter;
-import is.hello.go99.example.recycler.AmplitudeItemAnimator;
+import is.hello.go99.example.view.AmplitudeItemAnimator;
 import is.hello.go99.example.view.InfoTooltipView;
 
 import static is.hello.go99.animators.MultiAnimator.animatorFor;
@@ -53,11 +50,8 @@ public class AmplitudesFragment extends Fragment
         AmplitudeSource.Consumer, AmplitudeAdapter.OnClickListener, InfoTooltipView.OnDismissListener {
     private static final float TARGET_DIMMED_ALPHA = 0.25f;
 
-    private static final String SAVED_SOURCE_STATE = AmplitudesFragment.class.getName() + "#SAVED_SOURCE_STATE";
-
-    private AnimatorContext animatorContext;
-    private boolean enableLongAnimations = false;
-    private long cascadeDelayStep = 10L;
+    private static final String SAVED_SOURCE_STATE = AmplitudesFragment.class.getName() + ".SAVED_SOURCE_STATE";
+    private static final String SAVED_WANTS_LONG_DELAY_STEP = AmplitudesFragment.class.getName() + ".SAVED_WANTS_LONG_DELAY_STEP";
 
     private AmplitudeSource amplitudeSource;
 
@@ -66,9 +60,6 @@ public class AmplitudesFragment extends Fragment
     private RecyclerView recyclerView;
     private AmplitudeAdapter adapter;
     private Button generateData;
-
-    private MenuItem longAnimationsItem;
-    private MenuItem clearItem;
 
     private @Nullable InfoTooltipView infoTooltipView;
     private AmplitudeItemAnimator itemAnimator;
@@ -80,9 +71,6 @@ public class AmplitudesFragment extends Fragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        this.animatorContext = new AnimatorContext(getClass().getSimpleName());
-        animatorContext.setTransactionTemplate(new AnimatorTemplate(new FastOutSlowInInterpolator()));
-
         this.amplitudeSource = new RandomAmplitudeSource();
         if (savedInstanceState != null) {
             final Bundle savedState = savedInstanceState.getBundle(SAVED_SOURCE_STATE);
@@ -90,9 +78,6 @@ public class AmplitudesFragment extends Fragment
                 amplitudeSource.restoreState(savedState);
             }
         }
-
-        setHasOptionsMenu(true);
-        setRetainInstance(true);
     }
 
     @Override
@@ -112,6 +97,10 @@ public class AmplitudesFragment extends Fragment
         recyclerView.addOnScrollListener(new InfoTooltipDismissScrollListener());
 
         this.itemAnimator = new AmplitudeItemAnimator(getAnimatorContext());
+        if (savedInstanceState != null) {
+            final boolean wantsLongDelayStep = savedInstanceState.getBoolean(SAVED_WANTS_LONG_DELAY_STEP);
+            itemAnimator.setWantsLongDelayStep(wantsLongDelayStep);
+        }
         recyclerView.setItemAnimator(itemAnimator);
 
         this.adapter = new AmplitudeAdapter(getResources(), this);
@@ -136,10 +125,20 @@ public class AmplitudesFragment extends Fragment
     }
 
     @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+
+        if (getView() != null && isVisibleToUser) {
+            onRefresh();
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
         outState.putBundle(SAVED_SOURCE_STATE, amplitudeSource.saveState());
+        outState.putBoolean(SAVED_WANTS_LONG_DELAY_STEP, itemAnimator.getWantsLongDelayStep());
     }
 
     @Override
@@ -160,53 +159,20 @@ public class AmplitudesFragment extends Fragment
 
     //region Menu
 
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_amplitudes, menu);
-
-        this.longAnimationsItem = menu.findItem(R.id.action_long_animations);
-        this.clearItem = menu.findItem(R.id.action_clear);
+    public boolean isClearEnabled() {
+        return (adapter.getItemCount() > 0 && !swipeRefreshLayout.isRefreshing());
     }
 
-    @Override
-    public void onPrepareOptionsMenu(Menu menu) {
-        longAnimationsItem.setChecked(enableLongAnimations);
-        clearItem.setEnabled(adapter.getItemCount() > 0 && !swipeRefreshLayout.isRefreshing());
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_long_animations: {
-                final boolean newValue = !enableLongAnimations;
-                setEnableLongAnimations(newValue);
-                item.setChecked(newValue);
-                return true;
-            }
-
-            case R.id.action_clear: {
-                if (adapter.getItemCount() > 0 && !swipeRefreshLayout.isRefreshing()) {
-                    adapter.clear();
-                    itemAnimator.runAfterAnimationsDone(new Runnable() {
-                        @Override
-                        public void run() {
-                            showGenerateData();
-                        }
-                    });
+    public void clear() {
+        if (isClearEnabled()) {
+            adapter.clear();
+            itemAnimator.runAfterAnimationsDone(new Runnable() {
+                @Override
+                public void run() {
+                    showGenerateData();
                 }
-                return true;
-            }
-
-            default: {
-                return super.onOptionsItemSelected(item);
-            }
+            });
         }
-    }
-
-    @Override
-    public void onDestroyOptionsMenu() {
-        this.longAnimationsItem = null;
-        this.clearItem = null;
     }
 
     //endregion
@@ -217,7 +183,8 @@ public class AmplitudesFragment extends Fragment
     @NonNull
     @Override
     public AnimatorContext getAnimatorContext() {
-        return animatorContext;
+        final AnimatorContext.Scene parentScene = (AnimatorContext.Scene) getActivity();
+        return parentScene.getAnimatorContext();
     }
 
     @Override
@@ -264,22 +231,7 @@ public class AmplitudesFragment extends Fragment
     //region Animations
 
     public void setEnableLongAnimations(boolean enableLongAnimations) {
-        if (enableLongAnimations != this.enableLongAnimations) {
-            final AnimatorTemplate oldTemplate = animatorContext.getTransactionTemplate();
-            final AnimatorTemplate newTemplate;
-            if (enableLongAnimations) {
-                newTemplate = oldTemplate.withDuration(oldTemplate.duration * 2L);
-                itemAnimator.setDelayStep(itemAnimator.getDelayStep() * 2L);
-                this.cascadeDelayStep *= 2L;
-            } else {
-                newTemplate = oldTemplate.withDuration(oldTemplate.duration / 2L);
-                itemAnimator.setDelayStep(itemAnimator.getDelayStep() / 2L);
-                this.cascadeDelayStep /= 2L;
-            }
-            animatorContext.setTransactionTemplate(newTemplate);
-
-            this.enableLongAnimations = enableLongAnimations;
-        }
+        itemAnimator.setWantsLongDelayStep(enableLongAnimations);
     }
 
     private void hideInitialCallToAction() {
@@ -341,7 +293,7 @@ public class AmplitudesFragment extends Fragment
                                .withStartDelay(delay)
                                .alpha(TARGET_DIMMED_ALPHA);
 
-                    delay += cascadeDelayStep;
+                    delay += itemAnimator.getDelayStep();
                 }
 
                 transaction.animatorFor(viewHolder.itemView)
@@ -353,7 +305,7 @@ public class AmplitudesFragment extends Fragment
                                .withStartDelay(delay)
                                .alpha(TARGET_DIMMED_ALPHA);
 
-                    delay += cascadeDelayStep;
+                    delay += itemAnimator.getDelayStep();
                 }
 
                 if (infoTooltipView != null) {
