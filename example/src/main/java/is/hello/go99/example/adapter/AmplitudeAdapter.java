@@ -21,19 +21,24 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.util.Random;
+import java.util.Collections;
+import java.util.List;
 
 import is.hello.go99.Anime;
 import is.hello.go99.example.R;
+import is.hello.go99.example.data.Amplitude;
+import is.hello.go99.example.view.AmplitudeItemAnimator;
 import is.hello.go99.example.view.AmplitudeView;
 
+/**
+ * Provides the views to render a series of amplitudes on {@link is.hello.go99.example.HomeActivity}.
+ */
 public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.ViewHolder> {
-    private final Random random = new Random();
     private final int amplitudeHeightMin;
     private final int amplitudeHeightMax;
 
     private final OnClickListener onClickListener;
-    private float[] amplitudes = {};
+    private List<Amplitude> amplitudes = Collections.emptyList();
 
     public AmplitudeAdapter(@NonNull Resources resources,
                             @NonNull OnClickListener onClickListener) {
@@ -42,14 +47,22 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
         this.amplitudeHeightMax = resources.getDimensionPixelSize(R.dimen.view_amplitude_height_max);
     }
 
+
     //region Binding
 
-    public void bindAmplitudes(@NonNull float[] amplitudes) {
-        final int oldSize = this.amplitudes.length;
+    /**
+     * Replaces the current contents of the adapter with a new collection of amplitudes,
+     * sending differential item change notifications to allow the containing recycler
+     * view to animate in the new values.
+     *
+     * @param amplitudes    The new amplitudes.
+     */
+    public void bindAmplitudes(@NonNull List<Amplitude> amplitudes) {
+        final int oldSize = this.amplitudes.size();
 
         this.amplitudes = amplitudes;
 
-        final int newSize = amplitudes.length;
+        final int newSize = amplitudes.size();
 
         if (oldSize > newSize) {
             notifyItemRangeRemoved(newSize, oldSize - newSize);
@@ -60,12 +73,15 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
         } else {
             notifyItemRangeChanged(0, newSize);
         }
-
     }
 
+    /**
+     * Clears the contents of the adapter, sending a differential item change notification
+     * to allow the containing recycler view to animate out the values.
+     */
     public void clear() {
-        final int oldSize = this.amplitudes.length;
-        this.amplitudes = new float[0];
+        final int oldSize = this.amplitudes.size();
+        this.amplitudes = Collections.emptyList();
         notifyItemRangeRemoved(0, oldSize);
     }
 
@@ -74,32 +90,27 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
 
     //region Rendering
 
-    private int generateHeight() {
-        return amplitudeHeightMin + random.nextInt(amplitudeHeightMax - amplitudeHeightMin + 1);
-    }
-
     @Override
     public int getItemCount() {
-        return amplitudes.length;
+        return amplitudes.size();
     }
 
-    public float getAmplitude(int position) {
-        return amplitudes[position];
+    public Amplitude getAmplitude(int position) {
+        return amplitudes.get(position);
     }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         final AmplitudeView view = new AmplitudeView(parent.getContext());
         view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT,
-                                                           generateHeight()));
+                                                           amplitudeHeightMin));
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        final float amplitude = getAmplitude(position);
-        holder.amplitude = amplitude;
-        holder.amplitudeView.setAmplitude(amplitude);
+        final Amplitude amplitude = getAmplitude(position);
+        holder.bindAmplitude(amplitude);
     }
 
     @Override
@@ -110,9 +121,12 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
     //endregion
 
 
+    /**
+     * Encapsulates representation of a single {@link Amplitude} value.
+     */
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public final AmplitudeView amplitudeView;
-        float amplitude;
+        private float amplitudeValue;
 
         ViewHolder(@NonNull AmplitudeView amplitudeView) {
             super(amplitudeView);
@@ -121,8 +135,34 @@ public class AmplitudeAdapter extends RecyclerView.Adapter<AmplitudeAdapter.View
             amplitudeView.setOnClickListener(this);
         }
 
-        public float getTargetAmplitude() {
-            return amplitude;
+        /**
+         * Binds a given amplitude object to the view holder, updating
+         * the displayed value and height of the holder's amplitude view.
+         *
+         * @param amplitude The amplitude to bind.
+         */
+        void bindAmplitude(@NonNull Amplitude amplitude) {
+            this.amplitudeValue = amplitude.value;
+            amplitudeView.setAmplitude(amplitudeValue);
+
+            final ViewGroup.LayoutParams layoutParams = amplitudeView.getLayoutParams();
+            final float height = Anime.interpolateFloats(amplitude.height,
+                                                         amplitudeHeightMin,
+                                                         amplitudeHeightMax);
+            layoutParams.height = Math.round(height);
+            amplitudeView.requestLayout();
+        }
+
+        /**
+         * Returns the value that the view holder should display when
+         * the item added animations in the amplitudes fragment complete.
+         *
+         * @return The amplitude value this view holder should display.
+         *
+         * @see AmplitudeItemAnimator#runPendingAnimations() for usage.
+         */
+        public float getAmplitudeValue() {
+            return amplitudeValue;
         }
 
         @Override

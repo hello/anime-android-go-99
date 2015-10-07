@@ -29,9 +29,14 @@ import android.view.View;
 import android.view.ViewGroup;
 
 /**
- * A re-implementation of {@link android.support.v4.app.FragmentPagerAdapter} that does
- * not keep fragments in memory off-screen, exposes the currently visible fragment,
- * and exposes the tags used to add fragments to the wrapped fragment manager.
+ * A modified implementation of the Android support library's
+ * {@code FragmentPagerAdapter} with the following differences:
+ *
+ * <ol>
+ *     <li>Off-screen fragments are not kept in memory.</li>
+ *     <li>The tags used in the fragment manager are publicly accessible.</li>
+ *     <li>The currently visible fragment is exposed through a getter.</li>
+ * </ol>
  */
 public abstract class FragmentPagerAdapter extends PagerAdapter {
     private final FragmentManager fragmentManager;
@@ -92,7 +97,7 @@ public abstract class FragmentPagerAdapter extends PagerAdapter {
      * @return A stable tag for displaying the fragment.
      */
     public static String makeFragmentTag(int viewContainerId, long itemId) {
-        return "is:hello:sense:pager:" + viewContainerId + ":" + itemId;
+        return "is:hello:pager:" + viewContainerId + ":" + itemId;
     }
 
     @Override

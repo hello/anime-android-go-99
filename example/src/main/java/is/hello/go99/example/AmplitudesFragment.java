@@ -33,11 +33,14 @@ import android.view.animation.AnticipateOvershootInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
+import java.util.List;
+
 import is.hello.go99.Anime;
 import is.hello.go99.animators.AnimatorContext;
 import is.hello.go99.animators.AnimatorTemplate;
 import is.hello.go99.animators.OnAnimationCompleted;
 import is.hello.go99.example.adapter.AmplitudeAdapter;
+import is.hello.go99.example.data.Amplitude;
 import is.hello.go99.example.data.AmplitudeSource;
 import is.hello.go99.example.data.RandomAmplitudeSource;
 import is.hello.go99.example.view.AmplitudeItemAnimator;
@@ -129,7 +132,14 @@ public class AmplitudesFragment extends Fragment
         super.setUserVisibleHint(isVisibleToUser);
 
         if (getView() != null && isVisibleToUser) {
-            onRefresh();
+            if (adapter.getItemCount() == 0) {
+                onRefresh();
+            } else {
+                generateData.setVisibility(View.INVISIBLE);
+                generateData.setScaleX(1f);
+                generateData.setScaleY(1f);
+                generateData.setAlpha(1f);
+            }
         }
     }
 
@@ -198,7 +208,7 @@ public class AmplitudesFragment extends Fragment
     }
 
     @Override
-    public void onAmplitudesReady(@NonNull final float[] amplitudes) {
+    public void onAmplitudesReady(@NonNull final List<Amplitude> amplitudes) {
         swipeRefreshLayout.setRefreshing(false);
         getAnimatorContext().runWhenIdle(new Runnable() {
             @Override
@@ -314,7 +324,7 @@ public class AmplitudesFragment extends Fragment
 
                 AmplitudesFragment.this.infoTooltipView = new InfoTooltipView(getActivity());
                 infoTooltipView.setText(getString(R.string.amplitude_tooltip_fmt,
-                                                  viewHolder.getTargetAmplitude() * 100f));
+                                                  viewHolder.getAmplitudeValue() * 100f));
                 infoTooltipView.setAnimatorContext(getAnimatorContext());
                 infoTooltipView.showAboveView(root, viewHolder.itemView, AmplitudesFragment.this);
             }

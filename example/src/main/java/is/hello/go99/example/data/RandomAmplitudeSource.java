@@ -22,11 +22,10 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.Consumer {
+public class RandomAmplitudeSource implements AmplitudeSource {
     private static final String SAVED_AMPLITUDES = RandomAmplitudeSource.class.getName() + "#SAVED_AMPLITUDES";
 
     private static final int MIN_COUNT = 8;
@@ -35,7 +34,7 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
     private final List<Consumer> consumers = new ArrayList<>(1);
     private final Random random = new Random();
     private @Nullable Producer producer;
-    private @Nullable Either<float[], Throwable> current;
+    private @Nullable Either<ArrayList<Amplitude>, Throwable> current;
 
 
     //region Overrides
@@ -44,9 +43,9 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
     @Override
     public Bundle saveState() {
         if (current != null && current.isLeft()) {
-            final float[] amplitudes = current.getLeft();
+            final ArrayList<Amplitude> amplitudes = current.getLeft();
             final Bundle state = new Bundle();
-            state.putFloatArray(SAVED_AMPLITUDES, amplitudes);
+            state.putSerializable(SAVED_AMPLITUDES, amplitudes);
             return state;
         } else {
             return null;
@@ -55,7 +54,9 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
 
     @Override
     public void restoreState(@NonNull Bundle state) {
-        final float[] amplitudes = state.getFloatArray(SAVED_AMPLITUDES);
+        @SuppressWarnings("unchecked")
+        final ArrayList<Amplitude> amplitudes =
+                (ArrayList<Amplitude>) state.getSerializable(SAVED_AMPLITUDES);
         if (amplitudes != null) {
             onAmplitudesReady(amplitudes);
         }
@@ -70,7 +71,7 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
             producer.cancel(true);
         }
 
-        this.producer = new Producer(this);
+        this.producer = new Producer();
         producer.execute(random);
     }
 
@@ -80,9 +81,9 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
         consumers.add(consumer);
 
         if (current != null) {
-            current.match(new Either.Matcher<float[]>() {
+            current.match(new Either.Matcher<ArrayList<Amplitude>>() {
                 @Override
-                public void match(float[] amplitudes) {
+                public void match(ArrayList<Amplitude> amplitudes) {
                     consumer.onAmplitudesReady(amplitudes);
                 }
             }, new Either.Matcher<Throwable>() {
@@ -104,9 +105,8 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
 
     //region Dispatching
 
-    @Override
-    public void onAmplitudesReady(@NonNull float[] amplitudes) {
-        Log.d(getClass().getSimpleName(), "onAmplitudesReady(" + Arrays.toString(amplitudes) + ")");
+    public void onAmplitudesReady(@NonNull ArrayList<Amplitude> amplitudes) {
+        Log.d(getClass().getSimpleName(), "onAmplitudesReady(" + amplitudes + ")");
 
         for (int i = consumers.size() - 1; i >= 0; i--) {
             consumers.get(i).onAmplitudesReady(amplitudes);
@@ -116,35 +116,17 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
         this.producer = null;
     }
 
-    @Override
-    public void onAmplitudesUnavailable(@NonNull Throwable reason) {
-        Log.e(getClass().getSimpleName(), "onAmplitudesUnavailable()", reason);
-
-        for (int i = consumers.size() - 1; i >= 0; i--) {
-            consumers.get(i).onAmplitudesUnavailable(reason);
-        }
-
-        this.current = Either.right(reason);
-        this.producer = null;
-    }
-
     //endregion
 
 
-    static class Producer extends AsyncTask<Random, Void, float[]> {
-        private final AmplitudeSource.Consumer consumer;
-
-        Producer(@NonNull Consumer consumer) {
-            this.consumer = consumer;
-        }
-
+    class Producer extends AsyncTask<Random, Void, ArrayList<Amplitude>> {
         @Override
-        protected float[] doInBackground(Random... randoms) {
+        protected ArrayList<Amplitude> doInBackground(Random... randoms) {
             final Random random = randoms[0];
             final int count = MIN_COUNT + random.nextInt(MAX_COUNT - MIN_COUNT + 1);
-            final float[] amplitudes = new float[count];
+            final ArrayList<Amplitude> amplitudes = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
-                amplitudes[i] = random.nextFloat();
+                amplitudes.add(new Amplitude(random.nextFloat(), random.nextFloat()));
             }
 
             try {
@@ -157,9 +139,9 @@ public class RandomAmplitudeSource implements AmplitudeSource, AmplitudeSource.C
         }
 
         @Override
-        protected void onPostExecute(float[] amplitudes) {
+        protected void onPostExecute(ArrayList<Amplitude> amplitudes) {
             if (!isCancelled()) {
-                consumer.onAmplitudesReady(amplitudes);
+                onAmplitudesReady(amplitudes);
             }
         }
     }

@@ -26,7 +26,7 @@ import android.view.MenuItem;
 
 import is.hello.go99.animators.AnimatorContext;
 import is.hello.go99.animators.AnimatorTemplate;
-import is.hello.go99.example.adapter.HomeFragmentsAdapter;
+import is.hello.go99.example.adapter.AmplitudeFragmentsAdapter;
 import is.hello.go99.example.view.ViewPagerAnimatorContextAdapter;
 
 public class HomeActivity extends AppCompatActivity implements AnimatorContext.Scene, ViewPager.OnPageChangeListener {
@@ -36,7 +36,7 @@ public class HomeActivity extends AppCompatActivity implements AnimatorContext.S
     private AnimatorContext animatorContext;
 
     private ViewPager viewPager;
-    private HomeFragmentsAdapter adapter;
+    private AmplitudeFragmentsAdapter adapter;
 
     private boolean enableLongAnimations = false;
 
@@ -61,7 +61,7 @@ public class HomeActivity extends AppCompatActivity implements AnimatorContext.S
         viewPager.addOnPageChangeListener(animatorContextAdapter);
         viewPager.addOnPageChangeListener(this);
 
-        this.adapter = new HomeFragmentsAdapter(getSupportFragmentManager(), NUMBER_FRAGMENTS);
+        this.adapter = new AmplitudeFragmentsAdapter(getSupportFragmentManager(), NUMBER_FRAGMENTS);
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(NUMBER_FRAGMENTS - 1, false);
 

@@ -220,7 +220,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
                                .withStartDelay(animationDelay)
                                .alpha(1f);
 
-                    viewHolder.amplitudeView.animateToAmplitude(viewHolder.getTargetAmplitude(),
+                    viewHolder.amplitudeView.animateToAmplitude(viewHolder.getAmplitudeValue(),
                                                                 animationDelay,
                                                                 transaction);
                 }
