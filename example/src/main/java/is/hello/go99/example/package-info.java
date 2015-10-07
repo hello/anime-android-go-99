@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package is.hello.go99.example;
-
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 
 /**
- * Just hosts an instance of {@link AmplitudesFragment}.
+ * Demonstrates how to use anime-android-go-99 to coordinate the animation
+ * of a large number of views by duplicating one of the core components of
+ * the Sense Android app: the timeline.
+ *
+ * @see is.hello.go99.example.view.AmplitudeView for the rendering code.
+ * @see is.hello.go99.example.view.InfoTooltipView for a simple example of view animation.
+ * @see is.hello.go99.example.recycler.AmplitudeItemAnimator for most of the animation code.
+ * @see is.hello.go99.example.AmplitudesFragment for the glue code.
  */
-public class HomeActivity extends AppCompatActivity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home);
-    }
-}
+package is.hello.go99.example;
