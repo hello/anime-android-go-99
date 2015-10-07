@@ -69,18 +69,6 @@ artifacts {
 
 publishing {
     repositories {
-        maven {
-            if (VERSION_NAME.endsWith('-SNAPSHOT')) {
-                url ""
-            } else {
-                url ""
-            }
-            credentials(AwsCredentials) {
-                accessKey ""
-                secretKey ""
-            }
-        }
-
         publications {
             mavenJava(MavenPublication) {
                 groupId = PACKAGE
