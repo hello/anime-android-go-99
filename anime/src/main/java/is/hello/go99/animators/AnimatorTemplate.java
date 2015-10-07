@@ -121,7 +121,7 @@ public class AnimatorTemplate {
      * Creates and returns a configured ValueAnimator that will
      * transition between the specified array of rectangles.
      *
-     * @param rectangles The Rects to interpolate between.
+     * @param rectangles The rectangles to interpolate between.
      * @return A configured ValueAnimator.
      *
      * @see RectEvaluatorCompat
