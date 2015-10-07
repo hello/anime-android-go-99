@@ -312,7 +312,7 @@ public class AnimatorContext {
         /**
          * The template to apply to transaction animators, if non-null.
          */
-        public final @Nullable AnimatorTemplate template;
+        public final AnimatorTemplate template;
 
         private final List<Animator> pending = new ArrayList<>(2);
         private @Nullable Animator animator;
@@ -329,7 +329,7 @@ public class AnimatorContext {
          * @see #transaction(AnimatorTemplate, int, TransactionConsumer, OnAnimationCompleted)
          */
         public Transaction(@NonNull AnimatorContext animatorContext,
-                           @Nullable AnimatorTemplate template) {
+                           @NonNull AnimatorTemplate template) {
             this.animatorContext = animatorContext;
             this.template = template;
         }
@@ -390,16 +390,12 @@ public class AnimatorContext {
             if (animator == null) {
                 if (pending.size() == 1) {
                     final Animator single = pending.get(0);
-                    if (template != null) {
-                        template.apply(single);
-                    }
+                    template.apply(single);
                     this.animator = single;
                 } else {
                     final AnimatorSet set = new AnimatorSet();
                     set.playTogether(pending);
-                    if (template != null) {
-                        template.apply(set);
-                    }
+                    template.apply(set);
                     this.animator = set;
                 }
             }

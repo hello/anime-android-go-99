@@ -1,5 +1,6 @@
 package is.hello.go99.example.recycler;
 
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
@@ -9,8 +10,25 @@ import java.util.Collections;
 import java.util.List;
 
 import is.hello.go99.animators.AnimatorContext;
+import is.hello.go99.animators.AnimatorTemplate;
+import is.hello.go99.animators.MultiAnimator;
 import is.hello.go99.animators.OnAnimationCompleted;
+import is.hello.go99.example.AmplitudesFragment;
+import is.hello.go99.example.view.AmplitudeView;
 
+/**
+ * Demonstrates coordinating a very large number of on-screen animations. This item animator
+ * uses the {@link AnimatorContext} class to fade in and 'count up' a series of amplitudes.
+ * <p>
+ * All animations are coordinated through an {@link AnimatorContext.Transaction}, and the basic
+ * characteristics of the animations are specified in via an {@link AnimatorTemplate} set
+ * inside of {@link AmplitudesFragment#onCreate(Bundle)}.
+ * <p>
+ * The implementation of the animations are split between {@link Change} and
+ * {@link AmplitudeView}. {@code Change} uses a {@link MultiAnimator} to efficiently
+ * fade the views in and out, and {@code AmplitudeView} uses a classic {@code ValueAnimator}
+ * to expand its amplitude bar from the left to the right.
+ */
 public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
     private final AnimatorContext animatorContext;
 
@@ -24,15 +42,31 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
     //region Lifecycle
 
+    /**
+     * Constructs a new item animator.
+     *
+     * @param animatorContext The animator context to coordinate animations through.
+     */
     public AmplitudeItemAnimator(@NonNull AnimatorContext animatorContext) {
         this.animatorContext = animatorContext;
+
+        // We don't care about this, so we'll avoid
+        // a lot of extra work by turning it off.
         setSupportsChangeAnimations(false);
     }
 
+    /**
+     * Returns the amount of delay between sequential animations in the animator.
+     */
     public long getDelayStep() {
         return delayStep;
     }
 
+    /**
+     * Sets the amount of delay between sequential animations.
+     *
+     * @param delayStep The amount in milliseconds.
+     */
     public void setDelayStep(long delayStep) {
         this.delayStep = delayStep;
     }
@@ -86,6 +120,7 @@ public class AmplitudeItemAnimator extends RecyclerView.ItemAnimator {
 
     @Override
     public void endAnimation(RecyclerView.ViewHolder item) {
+        // See AmplitudeView#clearAnimation() for more info.
         item.itemView.clearAnimation();
     }
 

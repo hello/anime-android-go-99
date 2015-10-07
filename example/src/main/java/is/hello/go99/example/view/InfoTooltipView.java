@@ -21,6 +21,9 @@ import is.hello.go99.example.R;
 
 import static is.hello.go99.animators.MultiAnimator.animatorFor;
 
+/**
+ * A simple text-only tooltip that is intended to be overlaid on top of a view hierarchy.
+ */
 public class InfoTooltipView extends FrameLayout {
     private static final int VISIBLE_DURATION = 1500;
     private final TextView text;
@@ -37,6 +40,7 @@ public class InfoTooltipView extends FrameLayout {
         this(context, attrs, 0);
     }
 
+    @SuppressWarnings("deprecation")
     public InfoTooltipView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
 
@@ -73,6 +77,13 @@ public class InfoTooltipView extends FrameLayout {
         this.animatorContext = animatorContext;
     }
 
+    /**
+     * Shows the tooltip above a given view within a given parent view.
+     *
+     * @param parent    The parent view to attach the tooltip to.
+     * @param aboveView The view to display the tooltip above.
+     * @param onDismissListener A functor to call if the tooltip is dismissed without user intervention.
+     */
     public void showAboveView(final @NonNull ViewGroup parent,
                               final @NonNull View aboveView,
                               final @NonNull OnDismissListener onDismissListener) {
@@ -95,6 +106,12 @@ public class InfoTooltipView extends FrameLayout {
         });
     }
 
+    /**
+     * Animates the tooltip into view with a simple slide and fade animation,
+     * then schedules the tooltip to automatically dismiss itself.
+     *
+     * @param onDismissListener A functor to call if the tooltip is dismissed without user intervention.
+     */
     private void animateInText(final @NonNull OnDismissListener onDismissListener) {
         final int overlap = getResources().getDimensionPixelSize(R.dimen.view_info_tooltip_overlap);
         animatorFor(text, animatorContext)
