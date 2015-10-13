@@ -25,7 +25,8 @@ class MainActivity extends Activity implements AnimatorContext.Scene {
     public AnimatorContext getAnimatorContext() {
         return animatorContext;
     }
-}```
+}
+```
 
 ## Coordinating animations
 
@@ -44,7 +45,8 @@ getAnimatorContext().transaction(transaction -> {
         image.setVisibility(View.GONE);
         title.setVisibility(View.GONE);
     }
-});```
+});
+```
 
 ## Easy consistency
 
@@ -54,7 +56,8 @@ AnimeAndroidGo99 tries to provide the best sensible defaults, but they don't fit
 final AnimatorTemplate template = AnimatorTemplate.DEFAULT
           .withDuration(350L)
           .withInterpolator(new AccelerateDecelerateInterpolator());
-getAnimatorContext().setTransactionTemplate(template);```
+getAnimatorContext().setTransactionTemplate(template);
+```
 
 ## Simple scheduling
 
@@ -64,7 +67,8 @@ Coordinating groups of animations can be a pain. One of the tools provided by An
 getAnimatorContext().runWhenIdle(() -> {
     bindExpensiveAdapter();
     runNextAnimation();
-});```
+});
+```
 
 # Animator templates
 
@@ -86,7 +90,8 @@ final ValueAnimator rectAnimator = AnimatorContext.DEFAULT.createRectAnimator(st
 rectAnimator.addUpdateListener(a -> {
     final Rect rect = (Rect) a.getAnimatedValue();
     entity.setBounds(rect);
-});```
+});
+```
 
 ## As a template
 
@@ -95,7 +100,8 @@ Animator templates include an apply method for most animators provided by AnimeA
 ```java
 template.apply(textColorAnimator);
 template.apply(getLayoutTransition());
-template.apply(oldFashionedAnimation);```
+template.apply(oldFashionedAnimation);
+```
 
 ## Contributing
 
