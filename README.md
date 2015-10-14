@@ -103,7 +103,21 @@ template.apply(getLayoutTransition());
 template.apply(oldFashionedAnimation);
 ```
 
-## Contributing
+# Download
+
+## Gradle
+
+```groovy
+repositories {
+    maven { url 'https://dl.bintray.com/hello-inc/maven' }
+}
+
+dependencies {
+    compile 'is.hello:anime-android-go-99:0.4.0'
+}
+```
+
+# Contributing
 
 If you'd like to contribute to `anime-android-go-99`, fork the project on GitHub, and submit a pull request with your changes. Please be sure to include unit tests for any changes you make, and follow the coding style of the project as closely as possible. The full contribution guidelines can be found [here](https://github.com/hello/anime-android-go-99/blob/master/CONTRIBUTING.md).
 
