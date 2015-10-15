@@ -108,14 +108,12 @@ template.apply(oldFashionedAnimation);
 ## Gradle
 
 ```groovy
-repositories {
-    maven { url 'https://dl.bintray.com/hello-inc/maven' }
-}
-
 dependencies {
     compile 'is.hello:anime-android-go-99:0.4.0'
 }
 ```
+
+Make sure that your project's root `build.gradle` file contains the `jcenter()` repository.
 
 # Contributing
 

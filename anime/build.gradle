@@ -71,7 +71,7 @@ artifacts {
 publishing {
     repositories {
         publications {
-            mavenJava(MavenPublication) {
+            library(MavenPublication) {
                 groupId = GROUP_ID
                 artifactId = 'anime-android-go-99'
                 version = VERSION_NAME
@@ -125,24 +125,27 @@ publishing {
     }
 }
 
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-bintray {
-    user = properties.getProperty('bintrayUser')
-    key = properties.getProperty('bintrayApiKey')
-    publications = ['mavenJava']
-    pkg {
-        repo = 'maven'
-        name = NAME
-        userOrg = user
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/hello/anime-android-go-99.git'
-        labels = ['android', 'animation']
-        publicDownloadNumbers = false
-        version {
-            name = VERSION_NAME
-            desc = DESCRIPTION
-            vcsTag = VERSION_NAME
+def propertiesFile = project.rootProject.file('local.properties')
+if (propertiesFile.exists()) {
+    def properties = new Properties()
+    properties.load(propertiesFile.newDataInputStream())
+    bintray {
+        user = properties.getProperty('bintrayUser')
+        key = properties.getProperty('bintrayApiKey')
+        publications = ['library']
+        pkg {
+            repo = 'maven'
+            name = NAME
+            userOrg = user
+            licenses = ['Apache-2.0']
+            vcsUrl = 'https://github.com/hello/anime-android-go-99.git'
+            labels = ['android', 'animation']
+            publicDownloadNumbers = false
+            version {
+                name = VERSION_NAME
+                desc = DESCRIPTION
+                vcsTag = VERSION_NAME
+            }
         }
     }
 }
