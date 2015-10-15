@@ -115,6 +115,12 @@ dependencies {
 
 Make sure that your project's root `build.gradle` file contains the `jcenter()` repository.
 
+## Jar
+
+Get it on the [releases](https://github.com/hello/anime-android-go-99/releases) page.
+
+_Does not include convenience resources._
+
 # Contributing
 
 If you'd like to contribute to `anime-android-go-99`, fork the project on GitHub, and submit a pull request with your changes. Please be sure to include unit tests for any changes you make, and follow the coding style of the project as closely as possible. The full contribution guidelines can be found [here](https://github.com/hello/anime-android-go-99/blob/master/CONTRIBUTING.md).
