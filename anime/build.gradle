@@ -73,7 +73,7 @@ publishing {
         publications {
             library(MavenPublication) {
                 groupId = GROUP_ID
-                artifactId = 'anime-android-go-99'
+                artifactId = NAME
                 version = VERSION_NAME
 
                 artifact(sourceJar)
