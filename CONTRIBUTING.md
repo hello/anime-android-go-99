@@ -30,7 +30,7 @@ code formatting tool.
 
 ## Useful References
 
-- [Project Javadocs](#)
+- [Project Javadocs](http://hello.github.io/go99/javadoc/index.html)
 - [`Animator` reference](http://developer.android.com/reference/android/animation/Animator.html)
 - [`ViewPropertyAnimator` reference](http://developer.android.com/reference/android/view/ViewPropertyAnimator.html)
 - [The 99 Up example app](tree/master/example)
