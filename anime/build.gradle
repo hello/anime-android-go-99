@@ -3,7 +3,7 @@ plugins {
 }
 
 // Used for both the 'aar' file and publish.
-def VERSION_NAME = '0.4.0'
+def VERSION_NAME = '0.4.1'
 def GROUP_ID = 'is.hello'
 def NAME = 'anime-android-go-99'
 def DESCRIPTION = 'A small library to make animations on Android less annoying.'
@@ -136,7 +136,7 @@ if (propertiesFile.exists()) {
         pkg {
             repo = 'maven'
             name = NAME
-            userOrg = user
+            userOrg = properties.getProperty('bintrayOrg')
             licenses = ['Apache-2.0']
             vcsUrl = 'https://github.com/hello/anime-android-go-99.git'
             labels = ['android', 'animation']
