@@ -181,8 +181,23 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return this;
     }
 
+    /**
+     * Convenience method calls both {@link #scaleX(float)} and {@link #scaleY(float)}.
+     * @param value The scale value to animate to.
+     * @return The multi-animator.
+     */
     public MultiAnimator scale(float value) {
-        properties.put(Property.SCALE, value);
+        return this.scaleX(value)
+                   .scaleY(value);
+    }
+
+    public MultiAnimator scaleX(float value) {
+        properties.put(Property.SCALE_X, value);
+        return this;
+    }
+
+    public MultiAnimator scaleY(float value) {
+        properties.put(Property.SCALE_Y, value);
         return this;
     }
 
@@ -193,6 +208,16 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     public MultiAnimator rotation(float value) {
         properties.put(Property.ROTATION, value);
+        return this;
+    }
+
+    public MultiAnimator rotationX(float value) {
+        properties.put(Property.ROTATION_X, value);
+        return this;
+    }
+
+    public MultiAnimator rotationY(float value) {
+        properties.put(Property.ROTATION_Y, value);
         return this;
     }
 
@@ -292,8 +317,10 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                 case TRANSLATION_Y:
                     propertyAnimator.translationY(value);
                     break;
-                case SCALE:
+                case SCALE_X:
                     propertyAnimator.scaleX(value);
+                    break;
+                case SCALE_Y:
                     propertyAnimator.scaleY(value);
                     break;
                 case ALPHA:
@@ -301,6 +328,12 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                     break;
                 case ROTATION:
                     propertyAnimator.rotation(value);
+                    break;
+                case ROTATION_X:
+                    propertyAnimator.rotationX(value);
+                    break;
+                case ROTATION_Y:
+                    propertyAnimator.rotationY(value);
                     break;
             }
         }
@@ -478,8 +511,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         Y,
         TRANSLATION_X,
         TRANSLATION_Y,
-        SCALE,
+        SCALE_X,
+        SCALE_Y,
         ALPHA,
         ROTATION,
+        ROTATION_X,
+        ROTATION_Y,
     }
 }
