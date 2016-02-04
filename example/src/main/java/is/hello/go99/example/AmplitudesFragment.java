@@ -38,6 +38,7 @@ import java.util.List;
 import is.hello.go99.Anime;
 import is.hello.go99.animators.AnimatorContext;
 import is.hello.go99.animators.AnimatorTemplate;
+import is.hello.go99.animators.MultiAnimator;
 import is.hello.go99.animators.OnAnimationCompleted;
 import is.hello.go99.example.adapter.AmplitudeAdapter;
 import is.hello.go99.example.data.Amplitude;
@@ -266,9 +267,9 @@ public class AmplitudesFragment extends Fragment
     private void showGenerateData() {
         animatorFor(generateData, getAnimatorContext())
                 .withInterpolator(new AnticipateOvershootInterpolator())
-                .addOnAnimationWillStart(new Runnable() {
+                .addOnAnimationWillStart(new MultiAnimator.WillRunListener() {
                     @Override
-                    public void run() {
+                    public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                         generateData.setAlpha(0f);
                         generateData.setScaleX(0f);
                         generateData.setScaleY(0f);

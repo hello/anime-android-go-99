@@ -51,7 +51,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     private long startDelay = 0;
     private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
 
-    private final List<Runnable> willStartListeners = new ArrayList<>();
+    private final List<WillRunListener> willStartListeners = new ArrayList<>();
 
 
     //region Lifecycle
@@ -359,8 +359,8 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
             throw new IllegalStateException("Cannot start a MultiAnimator without setting a target");
         }
 
-        for (final Runnable willStart : willStartListeners) {
-            willStart.run();
+        for (final WillRunListener willStart : willStartListeners) {
+            willStart.onMultiAnimatorWillRun(this);
         }
 
         final ViewPropertyAnimator propertyAnimator = target.animate();
@@ -453,7 +453,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
      * @param willStart The runnable.
      * @return  The multi-animator.
      */
-    public MultiAnimator addOnAnimationWillStart(@NonNull Runnable willStart) {
+    public MultiAnimator addOnAnimationWillStart(@NonNull WillRunListener willStart) {
         willStartListeners.add(willStart);
         return this;
     }
@@ -481,9 +481,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     //region Canned Animations
 
     public MultiAnimator fadeIn() {
-        return addOnAnimationWillStart(new Runnable() {
+        return addOnAnimationWillStart(new WillRunListener() {
             @Override
-            public void run() {
+            public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                 target.setAlpha(0f);
                 target.setVisibility(View.VISIBLE);
             }
@@ -504,9 +504,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     public MultiAnimator slideYAndFade(final float startDeltaY, final float endDeltaY,
                                        final float startAlpha, final float endAlpha) {
-        return addOnAnimationWillStart(new Runnable() {
+        return addOnAnimationWillStart(new WillRunListener() {
             @Override
-            public void run() {
+            public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                 float y = target.getY();
                 float startY = y + startDeltaY;
                 float endY = y + endDeltaY;
@@ -523,9 +523,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     public MultiAnimator slideXAndFade(final float startDeltaX, final float endDeltaX,
                                        final float startAlpha, final float endAlpha) {
-        return addOnAnimationWillStart(new Runnable() {
+        return addOnAnimationWillStart(new WillRunListener() {
             @Override
-            public void run() {
+            public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                 float x = target.getX();
                 float startX = x + startDeltaX;
                 float endX = x + endDeltaX;
@@ -590,6 +590,10 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                 ", startDelay=" + startDelay +
                 ", duration=" + duration +
                 '}';
+    }
+
+    public interface WillRunListener {
+        void onMultiAnimatorWillRun(@NonNull MultiAnimator animator);
     }
 
     private enum Property {
