@@ -39,7 +39,6 @@ import is.hello.go99.ViewVisibility;
  */
 @NotBindable
 public class MultiAnimator extends Animator implements Animator.AnimatorListener {
-    private final @Nullable AnimatorContext animatorContext;
     private final Map<Property, Float> properties = new HashMap<>();
     private boolean hasFiredEndListener = false;
 
@@ -47,6 +46,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
      * The target of the animator. Can be {@code null}, but never will be in callbacks.
      */
     private View target;
+    private @Nullable AnimatorContext animatorContext;
     private long duration = Anime.DURATION_NORMAL;
     private long startDelay = 0;
     private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
@@ -90,6 +90,15 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return new MultiAnimator(view, animatorContext);
     }
 
+    /**
+     * Creates a multi-animator with no target or animator context to use as a template
+     * with other classes that {@code clone()} animators like {@code LayoutTransition}.
+     * @return  A new multi-animator object.
+     */
+    public static MultiAnimator empty() {
+        return new MultiAnimator(null, null);
+    }
+
     private MultiAnimator(@Nullable View target,
                           @Nullable AnimatorContext animatorContext) {
         this.target = target;
@@ -116,6 +125,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return this;
     }
 
+    /**
+     * Updates the duration of the multi-animator's animation.
+     * @param duration  The new duration.
+     * @return  The multi-animator.
+     */
     public MultiAnimator withDuration(long duration) {
         return setDuration(duration);
     }
@@ -130,6 +144,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         this.startDelay = startDelay;
     }
 
+    /**
+     * Updates the start delay to wait before the multi-animator starts animating.
+     * @param startDelay    The start delay.
+     * @return  The multi-animator
+     */
     public MultiAnimator withStartDelay(long startDelay) {
         setStartDelay(startDelay);
         return this;
@@ -146,11 +165,33 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         this.interpolator = interpolator;
     }
 
+    /**
+     * Updates the interpolator the multi-animator will use during animation.
+     * @param interpolator  The new interpolator.
+     * @return  The multi-animator.
+     */
     public MultiAnimator withInterpolator(@NonNull TimeInterpolator interpolator) {
         setInterpolator(interpolator);
         return this;
     }
 
+    /**
+     * Updates the animator context the multi-animator is tied to.
+     * @param animatorContext   The animator context.
+     * @return  The multi-animator.
+     */
+    public MultiAnimator withAnimatorContext(@Nullable AnimatorContext animatorContext) {
+        this.animatorContext = animatorContext;
+        return this;
+    }
+
+    /**
+     * Sets the view that this multi-animator will operate on. This value is automatically set
+     * by the {@link #animatorFor(View)} and {@link #animatorFor(View, AnimatorContext)} methods.
+     *
+     * @param target    The target.
+     * @throws IllegalArgumentException if {@code target} is not an instance of {@code View}.
+     */
     @Override
     public void setTarget(@Nullable Object target) {
         if (target != null && !(target instanceof View)) {
@@ -301,6 +342,12 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Running
 
+    /**
+     * Configures the underlying {@code ViewPropertyAnimator} and
+     * starts animating the multi-animators target view.
+     *
+     * @throws IllegalStateException if no target has been set on the multi-animator.
+     */
     @Override
     public void start() {
         if (target == null) {
@@ -393,6 +440,14 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Convenience
 
+    /**
+     * Adds a new {@code Runnable} object to run before the multi-animator configures and starts
+     * its underlying {@code ViewPropertyAnimator}. Any changes made to timing, or additions made
+     * to the multi-animators list of animated properties will take effect immediately after all
+     * will start listeners are run.
+     * @param willStart The runnable.
+     * @return  The multi-animator.
+     */
     public MultiAnimator addOnAnimationWillStart(@NonNull Runnable willStart) {
         willStartListeners.add(willStart);
         return this;
