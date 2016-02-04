@@ -24,8 +24,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,17 +39,19 @@ import is.hello.go99.ViewVisibility;
  */
 @NotBindable
 public class MultiAnimator extends Animator implements Animator.AnimatorListener {
-    private final View target;
     private final @Nullable AnimatorContext animatorContext;
     private final Map<Property, Float> properties = new HashMap<>();
     private boolean hasFiredEndListener = false;
 
+    /**
+     * The target of the animator. Can be {@code null}, but never will be in callbacks.
+     */
+    private View target;
     private long duration = Anime.DURATION_NORMAL;
     private long startDelay = 0;
     private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
 
     private final List<Runnable> willStartListeners = new ArrayList<>();
-    private @Nullable MultiAnimator previousInChain;
 
 
     //region Lifecycle
@@ -90,7 +90,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return new MultiAnimator(view, animatorContext);
     }
 
-    private MultiAnimator(@NonNull View target,
+    private MultiAnimator(@Nullable View target,
                           @Nullable AnimatorContext animatorContext) {
         this.target = target;
         this.animatorContext = animatorContext;
@@ -152,8 +152,17 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     }
 
     @Override
+    public void setTarget(@Nullable Object target) {
+        if (target != null && !(target instanceof View)) {
+            throw new IllegalArgumentException("Target must be a View");
+        }
+
+        this.target = (View) target;
+    }
+
+    @Override
     public boolean isRunning() {
-        return Anime.isAnimating(target);
+        return (target != null && Anime.isAnimating(target));
     }
 
     //endregion
@@ -228,13 +237,14 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void onAnimationStart(Animator animation) {
-        ArrayList<AnimatorListener> listeners = getListeners();
+        final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
             // The Animator contract requires that removing listeners
             // always works. Unfortunately, iterating backwards causes
             // some of the canned animations to fail. So we make a local
             // copy of the listeners array and work with that.
-            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            final AnimatorListener[] listenersCopy =
+                    listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
                 listener.onAnimationStart(this);
             }
@@ -251,7 +261,8 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
         final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            final AnimatorListener[] listenersCopy =
+                    listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
                 listener.onAnimationEnd(this);
             }
@@ -268,9 +279,10 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void onAnimationCancel(Animator animation) {
-        ArrayList<AnimatorListener> listeners = getListeners();
+        final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            final AnimatorListener[] listenersCopy =
+                    listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
                 listener.onAnimationCancel(this);
             }
@@ -289,7 +301,12 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Running
 
-    private void startInternal() {
+    @Override
+    public void start() {
+        if (target == null) {
+            throw new IllegalStateException("Cannot start a MultiAnimator without setting a target");
+        }
+
         for (final Runnable willStart : willStartListeners) {
             willStart.run();
         }
@@ -346,16 +363,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         }
     }
 
-    @Override
-    public void start() {
-        if (previousInChain != null) {
-            previousInChain.start();
-        } else {
-            startInternal();
-        }
-    }
-
     public void postStart() {
+        if (target == null) {
+            throw new IllegalStateException("Cannot postStart a MultiAnimator without setting a target");
+        }
+
         target.post(new Runnable() {
             @Override
             public void run() {
@@ -366,7 +378,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void cancel() {
-        target.animate().cancel();
+        if (target != null) {
+            target.animate().cancel();
+        }
     }
 
     @Override
@@ -401,22 +415,6 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return this;
     }
 
-    public MultiAnimator andThen() {
-        final MultiAnimator nextAnimation = new MultiAnimator(target, animatorContext);
-        nextAnimation.setDuration(duration);
-        nextAnimation.setInterpolator(interpolator);
-        addOnAnimationCompleted(new OnAnimationCompleted() {
-            @Override
-            public void onAnimationCompleted(boolean finished) {
-                if (finished) {
-                    nextAnimation.startInternal();
-                }
-            }
-        });
-        nextAnimation.previousInChain = this;
-        return nextAnimation;
-    }
-
     //endregion
 
 
@@ -442,15 +440,6 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                         }
                     }
                 });
-    }
-
-    public MultiAnimator simplePop(float amount) {
-        return setDuration(Anime.DURATION_FAST / 2)
-                .withInterpolator(new AccelerateInterpolator())
-                .scale(amount)
-                .andThen()
-                .withInterpolator(new DecelerateInterpolator())
-                .scale(1.0f);
     }
 
     public MultiAnimator slideYAndFade(final float startDeltaY, final float endDeltaY,
