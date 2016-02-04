@@ -201,7 +201,6 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         this.target = (View) target;
     }
 
-    @Nullable
     public View getTarget() {
         return target;
     }
