@@ -197,4 +197,37 @@ public class MultiAnimatorTests extends Go99TestCase {
         final MultiAnimator withAnimatorContext = MultiAnimator.animatorFor(fakeView, testAnimatorContext);
         assertThat(withAnimatorContext, is(notNullValue()));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void setTargetTypeCheck() {
+        final MultiAnimator empty = MultiAnimator.empty();
+        empty.setTarget("This is really not a view");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void emptyStartThrows() {
+        final MultiAnimator empty = MultiAnimator.empty();
+        empty.start();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void emptyPostStartThrows() {
+        final MultiAnimator empty = MultiAnimator.empty();
+        empty.postStart();
+    }
+
+    @Test
+    public void cloneFunctional() {
+        final AnimatorContext testContext = spy(new AnimatorContext("Test"));
+        final MultiAnimator animator = MultiAnimator.animatorFor(fakeView, testContext);
+        animator.translationY(0f);
+
+        final MultiAnimator clone = animator.clone();
+        assertThat(clone, is(notNullValue()));
+        assertThat(clone.getDuration(), is(equalTo(animator.getDuration())));
+        assertThat(clone.getInterpolator(), is(equalTo(animator.getInterpolator())));
+        assertThat(clone.getStartDelay(), is(equalTo(animator.getStartDelay())));
+        assertThat(clone.getListeners(), is(equalTo(animator.getListeners())));
+        assertThat(clone.getTarget(), is(equalTo(animator.getTarget())));
+    }
 }

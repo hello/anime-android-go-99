@@ -201,6 +201,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         this.target = (View) target;
     }
 
+    @Nullable
+    public View getTarget() {
+        return target;
+    }
+
     @Override
     public boolean isRunning() {
         return (target != null && Anime.isAnimating(target));
@@ -534,6 +539,43 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
             }
         });
     }
+
+    //endregion
+
+
+    //region Cloning
+
+    /*
+    private final Map<Property, Float> properties = new HashMap<>();
+    private boolean hasFiredEndListener = false;
+
+    private View target;
+    private @Nullable AnimatorContext animatorContext;
+    private long duration = Anime.DURATION_NORMAL;
+    private long startDelay = 0;
+    private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
+
+    private final List<Runnable> willStartListeners = new ArrayList<>();
+     */
+
+    @Override
+    public MultiAnimator clone() {
+        final MultiAnimator animator = (MultiAnimator) super.clone();
+
+        animator.properties.putAll(properties);
+        animator.hasFiredEndListener = hasFiredEndListener;
+
+        animator.target = target;
+        animator.animatorContext = animatorContext;
+        animator.duration = duration;
+        animator.startDelay = startDelay;
+        animator.interpolator = interpolator;
+
+        animator.willStartListeners.addAll(willStartListeners);
+
+        return animator;
+    }
+
 
     //endregion
 
