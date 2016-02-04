@@ -3,7 +3,7 @@ plugins {
 }
 
 // Used for both the 'aar' file and publish.
-def VERSION_NAME = '0.4.1'
+def VERSION_NAME = '0.5.0'
 def GROUP_ID = 'is.hello'
 def NAME = 'anime-android-go-99'
 def DESCRIPTION = 'A small library to make animations on Android less annoying.'
