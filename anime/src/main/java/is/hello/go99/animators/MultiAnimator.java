@@ -39,7 +39,7 @@ import is.hello.go99.ViewVisibility;
  */
 @NotBindable
 public class MultiAnimator extends Animator implements Animator.AnimatorListener {
-    private final Map<Property, Float> properties = new HashMap<>();
+    private Map<Property, Float> properties = new HashMap<>();
     private boolean hasFiredEndListener = false;
 
     /**
@@ -51,7 +51,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     private long startDelay = 0;
     private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
 
-    private final List<WillRunListener> willStartListeners = new ArrayList<>();
+    private List<WillRunListener> willStartListeners = new ArrayList<>();
 
 
     //region Lifecycle
@@ -544,24 +544,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Cloning
 
-    /*
-    private final Map<Property, Float> properties = new HashMap<>();
-    private boolean hasFiredEndListener = false;
-
-    private View target;
-    private @Nullable AnimatorContext animatorContext;
-    private long duration = Anime.DURATION_NORMAL;
-    private long startDelay = 0;
-    private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
-
-    private final List<Runnable> willStartListeners = new ArrayList<>();
-     */
-
     @Override
     public MultiAnimator clone() {
         final MultiAnimator animator = (MultiAnimator) super.clone();
 
-        animator.properties.putAll(properties);
+        animator.properties = new HashMap<>(properties);
         animator.hasFiredEndListener = hasFiredEndListener;
 
         animator.target = target;
@@ -570,7 +557,7 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         animator.startDelay = startDelay;
         animator.interpolator = interpolator;
 
-        animator.willStartListeners.addAll(willStartListeners);
+        animator.willStartListeners = new ArrayList<>(willStartListeners);
 
         return animator;
     }
