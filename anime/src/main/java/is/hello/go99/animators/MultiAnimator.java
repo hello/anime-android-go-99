@@ -24,8 +24,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,17 +39,19 @@ import is.hello.go99.ViewVisibility;
  */
 @NotBindable
 public class MultiAnimator extends Animator implements Animator.AnimatorListener {
-    private final View target;
-    private final @Nullable AnimatorContext animatorContext;
-    private final Map<Property, Float> properties = new HashMap<>();
+    private Map<Property, Float> properties = new HashMap<>();
     private boolean hasFiredEndListener = false;
 
+    /**
+     * The target of the animator. Can be {@code null}, but never will be in callbacks.
+     */
+    private View target;
+    private @Nullable AnimatorContext animatorContext;
     private long duration = Anime.DURATION_NORMAL;
     private long startDelay = 0;
     private TimeInterpolator interpolator = Anime.INTERPOLATOR_DEFAULT;
 
-    private final List<Runnable> willStartListeners = new ArrayList<>();
-    private @Nullable MultiAnimator previousInChain;
+    private List<WillRunListener> willStartListeners = new ArrayList<>();
 
 
     //region Lifecycle
@@ -90,7 +90,16 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return new MultiAnimator(view, animatorContext);
     }
 
-    private MultiAnimator(@NonNull View target,
+    /**
+     * Creates a multi-animator with no target or animator context to use as a template
+     * with other classes that {@code clone()} animators like {@code LayoutTransition}.
+     * @return  A new multi-animator object.
+     */
+    public static MultiAnimator empty() {
+        return new MultiAnimator(null, null);
+    }
+
+    private MultiAnimator(@Nullable View target,
                           @Nullable AnimatorContext animatorContext) {
         this.target = target;
         this.animatorContext = animatorContext;
@@ -116,6 +125,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return this;
     }
 
+    /**
+     * Updates the duration of the multi-animator's animation.
+     * @param duration  The new duration.
+     * @return  The multi-animator.
+     */
     public MultiAnimator withDuration(long duration) {
         return setDuration(duration);
     }
@@ -130,6 +144,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         this.startDelay = startDelay;
     }
 
+    /**
+     * Updates the start delay to wait before the multi-animator starts animating.
+     * @param startDelay    The start delay.
+     * @return  The multi-animator
+     */
     public MultiAnimator withStartDelay(long startDelay) {
         setStartDelay(startDelay);
         return this;
@@ -146,14 +165,49 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         this.interpolator = interpolator;
     }
 
+    /**
+     * Updates the interpolator the multi-animator will use during animation.
+     * @param interpolator  The new interpolator.
+     * @return  The multi-animator.
+     */
     public MultiAnimator withInterpolator(@NonNull TimeInterpolator interpolator) {
         setInterpolator(interpolator);
         return this;
     }
 
+    /**
+     * Updates the animator context the multi-animator is tied to.
+     * @param animatorContext   The animator context.
+     * @return  The multi-animator.
+     */
+    public MultiAnimator withAnimatorContext(@Nullable AnimatorContext animatorContext) {
+        this.animatorContext = animatorContext;
+        return this;
+    }
+
+    /**
+     * Sets the view that this multi-animator will operate on. This value is automatically set
+     * by the {@link #animatorFor(View)} and {@link #animatorFor(View, AnimatorContext)} methods.
+     *
+     * @param target    The target.
+     * @throws IllegalArgumentException if {@code target} is not an instance of {@code View}.
+     */
+    @Override
+    public void setTarget(@Nullable Object target) {
+        if (target != null && !(target instanceof View)) {
+            throw new IllegalArgumentException("Target must be a View");
+        }
+
+        this.target = (View) target;
+    }
+
+    public View getTarget() {
+        return target;
+    }
+
     @Override
     public boolean isRunning() {
-        return Anime.isAnimating(target);
+        return (target != null && Anime.isAnimating(target));
     }
 
     //endregion
@@ -228,13 +282,14 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void onAnimationStart(Animator animation) {
-        ArrayList<AnimatorListener> listeners = getListeners();
+        final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
             // The Animator contract requires that removing listeners
             // always works. Unfortunately, iterating backwards causes
             // some of the canned animations to fail. So we make a local
             // copy of the listeners array and work with that.
-            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            final AnimatorListener[] listenersCopy =
+                    listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
                 listener.onAnimationStart(this);
             }
@@ -251,7 +306,8 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
         final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            final AnimatorListener[] listenersCopy =
+                    listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
                 listener.onAnimationEnd(this);
             }
@@ -268,9 +324,10 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void onAnimationCancel(Animator animation) {
-        ArrayList<AnimatorListener> listeners = getListeners();
+        final ArrayList<AnimatorListener> listeners = getListeners();
         if (listeners != null) {
-            final AnimatorListener[] listenersCopy = listeners.toArray(new AnimatorListener[listeners.size()]);
+            final AnimatorListener[] listenersCopy =
+                    listeners.toArray(new AnimatorListener[listeners.size()]);
             for (AnimatorListener listener : listenersCopy) {
                 listener.onAnimationCancel(this);
             }
@@ -289,9 +346,20 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Running
 
-    private void startInternal() {
-        for (final Runnable willStart : willStartListeners) {
-            willStart.run();
+    /**
+     * Configures the underlying {@code ViewPropertyAnimator} and
+     * starts animating the multi-animators target view.
+     *
+     * @throws IllegalStateException if no target has been set on the multi-animator.
+     */
+    @Override
+    public void start() {
+        if (target == null) {
+            throw new IllegalStateException("Cannot start a MultiAnimator without setting a target");
+        }
+
+        for (final WillRunListener willStart : willStartListeners) {
+            willStart.onMultiAnimatorWillRun(this);
         }
 
         final ViewPropertyAnimator propertyAnimator = target.animate();
@@ -346,16 +414,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         }
     }
 
-    @Override
-    public void start() {
-        if (previousInChain != null) {
-            previousInChain.start();
-        } else {
-            startInternal();
-        }
-    }
-
     public void postStart() {
+        if (target == null) {
+            throw new IllegalStateException("Cannot postStart a MultiAnimator without setting a target");
+        }
+
         target.post(new Runnable() {
             @Override
             public void run() {
@@ -366,12 +429,55 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void cancel() {
-        target.animate().cancel();
+        if (target != null) {
+            target.animate().cancel();
+        }
     }
 
     @Override
     public void end() {
-        throw new AssertionError("end not supported by MultiAnimator.");
+        final ViewPropertyAnimator animator = target.animate();
+        animator.setListener(null); // Prevent unwanted cancel callback
+        animator.cancel();
+
+        for (final Map.Entry<Property, Float> entry : properties.entrySet()) {
+            final Property property = entry.getKey();
+            final float value = entry.getValue();
+            switch (property) {
+                case X:
+                    target.setX(value);
+                    break;
+                case Y:
+                    target.setY(value);
+                    break;
+                case TRANSLATION_X:
+                    target.setTranslationX(value);
+                    break;
+                case TRANSLATION_Y:
+                    target.setTranslationY(value);
+                    break;
+                case SCALE_X:
+                    target.setScaleX(value);
+                    break;
+                case SCALE_Y:
+                    target.setScaleY(value);
+                    break;
+                case ALPHA:
+                    target.setAlpha(value);
+                    break;
+                case ROTATION:
+                    target.setRotation(value);
+                    break;
+                case ROTATION_X:
+                    target.setRotationX(value);
+                    break;
+                case ROTATION_Y:
+                    target.setRotationY(value);
+                    break;
+            }
+        }
+
+        onAnimationEnd(this);
     }
 
     //endregion
@@ -379,7 +485,15 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     //region Convenience
 
-    public MultiAnimator addOnAnimationWillStart(@NonNull Runnable willStart) {
+    /**
+     * Adds a new {@code Runnable} object to run before the multi-animator configures and starts
+     * its underlying {@code ViewPropertyAnimator}. Any changes made to timing, or additions made
+     * to the multi-animators list of animated properties will take effect immediately after all
+     * will start listeners are run.
+     * @param willStart The runnable.
+     * @return  The multi-animator.
+     */
+    public MultiAnimator addOnAnimationWillStart(@NonNull WillRunListener willStart) {
         willStartListeners.add(willStart);
         return this;
     }
@@ -401,31 +515,15 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
         return this;
     }
 
-    public MultiAnimator andThen() {
-        final MultiAnimator nextAnimation = new MultiAnimator(target, animatorContext);
-        nextAnimation.setDuration(duration);
-        nextAnimation.setInterpolator(interpolator);
-        addOnAnimationCompleted(new OnAnimationCompleted() {
-            @Override
-            public void onAnimationCompleted(boolean finished) {
-                if (finished) {
-                    nextAnimation.startInternal();
-                }
-            }
-        });
-        nextAnimation.previousInChain = this;
-        return nextAnimation;
-    }
-
     //endregion
 
 
     //region Canned Animations
 
     public MultiAnimator fadeIn() {
-        return addOnAnimationWillStart(new Runnable() {
+        return addOnAnimationWillStart(new WillRunListener() {
             @Override
-            public void run() {
+            public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                 target.setAlpha(0f);
                 target.setVisibility(View.VISIBLE);
             }
@@ -444,20 +542,11 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                 });
     }
 
-    public MultiAnimator simplePop(float amount) {
-        return setDuration(Anime.DURATION_FAST / 2)
-                .withInterpolator(new AccelerateInterpolator())
-                .scale(amount)
-                .andThen()
-                .withInterpolator(new DecelerateInterpolator())
-                .scale(1.0f);
-    }
-
     public MultiAnimator slideYAndFade(final float startDeltaY, final float endDeltaY,
                                        final float startAlpha, final float endAlpha) {
-        return addOnAnimationWillStart(new Runnable() {
+        return addOnAnimationWillStart(new WillRunListener() {
             @Override
-            public void run() {
+            public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                 float y = target.getY();
                 float startY = y + startDeltaY;
                 float endY = y + endDeltaY;
@@ -474,9 +563,9 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     public MultiAnimator slideXAndFade(final float startDeltaX, final float endDeltaX,
                                        final float startAlpha, final float endAlpha) {
-        return addOnAnimationWillStart(new Runnable() {
+        return addOnAnimationWillStart(new WillRunListener() {
             @Override
-            public void run() {
+            public void onMultiAnimatorWillRun(@NonNull MultiAnimator animator) {
                 float x = target.getX();
                 float startX = x + startDeltaX;
                 float endX = x + endDeltaX;
@@ -494,6 +583,30 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
     //endregion
 
 
+    //region Cloning
+
+    @Override
+    public MultiAnimator clone() {
+        final MultiAnimator animator = (MultiAnimator) super.clone();
+
+        animator.properties = new HashMap<>(properties);
+        animator.hasFiredEndListener = hasFiredEndListener;
+
+        animator.target = target;
+        animator.animatorContext = animatorContext;
+        animator.duration = duration;
+        animator.startDelay = startDelay;
+        animator.interpolator = interpolator;
+
+        animator.willStartListeners = new ArrayList<>(willStartListeners);
+
+        return animator;
+    }
+
+
+    //endregion
+
+
     @Override
     public String toString() {
         return "MultiAnimator{" +
@@ -504,6 +617,10 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
                 ", startDelay=" + startDelay +
                 ", duration=" + duration +
                 '}';
+    }
+
+    public interface WillRunListener {
+        void onMultiAnimatorWillRun(@NonNull MultiAnimator animator);
     }
 
     private enum Property {
