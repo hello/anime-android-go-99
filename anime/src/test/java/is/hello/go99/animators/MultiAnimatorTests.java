@@ -6,6 +6,7 @@ import android.animation.TimeInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.robolectric.Robolectric;
@@ -22,6 +23,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -179,7 +182,7 @@ public class MultiAnimatorTests extends Go99TestCase {
         final AnimatorContext testContext = spy(new AnimatorContext("Test"));
 
         final MultiAnimator animator = MultiAnimator.animatorFor(fakeView, testContext);
-        animator.translationY(0f);
+        animator.translationY(100f);
         animator.start();
 
         verify(testContext).beginAnimation(any(String.class));
@@ -187,6 +190,35 @@ public class MultiAnimatorTests extends Go99TestCase {
         Anime.cancelAll(fakeView);
 
         verify(testContext).endAnimation(any(String.class));
+
+        assertThat(fakeView.getTranslationY(), is(equalTo(0f)));
+    }
+
+    @Test
+    public void end() {
+        final Scheduler scheduler = Robolectric.getForegroundThreadScheduler();
+        scheduler.pause();
+
+        final AnimatorContext testContext = spy(new AnimatorContext("Test"));
+
+        final MultiAnimator animator = MultiAnimator.animatorFor(fakeView, testContext);
+        animator.translationY(100f);
+
+        final Animator.AnimatorListener listener = mock(Animator.AnimatorListener.class);
+        animator.addListener(listener);
+
+        animator.start();
+
+        verify(testContext).beginAnimation(any(String.class));
+
+        animator.end();
+
+        verify(testContext).endAnimation(any(String.class));
+        verify(listener, never()).onAnimationCancel(animator);
+        verify(listener).onAnimationEnd(animator);
+
+        assertThat(fakeView.getTranslationY(), is(equalTo(100f)));
+        assertThat(animator.isRunning(), is(false));
     }
 
     @Test

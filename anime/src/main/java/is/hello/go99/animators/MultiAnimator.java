@@ -436,7 +436,48 @@ public class MultiAnimator extends Animator implements Animator.AnimatorListener
 
     @Override
     public void end() {
-        throw new AssertionError("end not supported by MultiAnimator.");
+        final ViewPropertyAnimator animator = target.animate();
+        animator.setListener(null); // Prevent unwanted cancel callback
+        animator.cancel();
+
+        for (final Map.Entry<Property, Float> entry : properties.entrySet()) {
+            final Property property = entry.getKey();
+            final float value = entry.getValue();
+            switch (property) {
+                case X:
+                    target.setX(value);
+                    break;
+                case Y:
+                    target.setY(value);
+                    break;
+                case TRANSLATION_X:
+                    target.setTranslationX(value);
+                    break;
+                case TRANSLATION_Y:
+                    target.setTranslationY(value);
+                    break;
+                case SCALE_X:
+                    target.setScaleX(value);
+                    break;
+                case SCALE_Y:
+                    target.setScaleY(value);
+                    break;
+                case ALPHA:
+                    target.setAlpha(value);
+                    break;
+                case ROTATION:
+                    target.setRotation(value);
+                    break;
+                case ROTATION_X:
+                    target.setRotationX(value);
+                    break;
+                case ROTATION_Y:
+                    target.setRotationY(value);
+                    break;
+            }
+        }
+
+        onAnimationEnd(this);
     }
 
     //endregion
