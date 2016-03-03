@@ -109,7 +109,7 @@ template.apply(oldFashionedAnimation);
 
 ```groovy
 dependencies {
-    compile 'is.hello:anime-android-go-99:0.4.0'
+    compile 'is.hello:anime-android-go-99:*'
 }
 ```
 
