@@ -1,5 +1,7 @@
 ![anime-android-go-99](imagery/99-grey-header-small.png "anime-android-go-99")
 
+<a href="http://www.methodscount.com/?lib=is.hello%3Aanime-android-go-99%3A0.5.0"><img src="https://img.shields.io/badge/Methods and size-core: 246 | deps: 20 | 32 KB-e91e63.svg"/></a>
+
 Tools to make building complex animations on Android more pleasant.
 
 # Introduction
